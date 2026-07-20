@@ -1,0 +1,144 @@
+// Parser for the exile-leveling step DSL.
+// Route data vendored from https://github.com/HeartofPhos/exile-leveling (MIT).
+
+export type Step = { text: string; tags: string[]; hints: string[]; quests?: string[] }
+export type ZoneVisit = { zone: string; act: number; steps: Step[] }
+
+const FRAG_RE = /\{([a-z_]+)(?:\|([^}]*))?\}/g
+// ponytail: assumes {dir|deg} is 0°=north clockwise; fix mapping if arrows look wrong in-game
+const ARROWS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖']
+
+function renderHint(text: string): string {
+  return text
+    .replace(FRAG_RE, (_m, type: string, rawArg?: string) => {
+      const arg = rawArg ?? ''
+      if (type === 'dir') return ARROWS[Math.round(Number(arg) / 45) % 8] ?? arg
+      return arg
+    })
+    .trim()
+}
+
+export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
+  const visits: ZoneVisit[] = []
+  let cur: ZoneVisit = { zone: 'The Twilight Strand', act: 1, steps: [] }
+  let lastStep: Step | null = null
+  let lastTown = "Lioneye's Watch"
+  let portalZone = ''
+
+  files.forEach((file, fi) => {
+    const act = fi + 1
+    // ponytail: act boundary = file boundary; only right if each file ends by entering the next act
+    if (cur.steps.length === 0) cur.act = act
+    const stack: boolean[] = []
+
+    for (const raw of file.split('\n')) {
+      let line = raw.trim()
+      if (!line) continue
+
+      const directive = /^#(ifdef|ifndef|endif|section|sub)\s*(.*)$/.exec(line)
+      if (directive) {
+        const [, kind, rest] = directive
+        if (kind === 'ifdef') stack.push(flags.has(rest.trim()))
+        else if (kind === 'ifndef') stack.push(!flags.has(rest.trim()))
+        else if (kind === 'endif') stack.pop()
+        else if (kind === 'sub' && stack.every(Boolean)) lastStep?.hints.push(renderHint(rest))
+        continue
+      }
+      if (!stack.every(Boolean)) continue
+
+      let comment: string | undefined
+      const cm = /\s#(.+)$/.exec(line)
+      if (cm) {
+        comment = cm[1].trim()
+        line = line.slice(0, cm.index)
+      }
+
+      const tags: string[] = []
+      const questIds: string[] = []
+      let move: string | null = null
+      let moveId = ''
+      const text = line
+        .replace(FRAG_RE, (_m, type: string, rawArg?: string) => {
+          const arg = rawArg ?? ''
+          switch (type) {
+            case 'kill':
+              tags.push('KILL')
+              return arg
+            case 'enter':
+              tags.push('GO')
+              move = comment ?? arg
+              moveId = arg
+              return comment ?? arg
+            case 'waypoint':
+              tags.push('WP')
+              if (comment) {
+                move = comment
+                moveId = arg
+              }
+              return comment ?? arg
+            case 'waypoint_get':
+              tags.push('WP')
+              return 'waypoint'
+            case 'quest':
+              tags.push('QUEST')
+              questIds.push(arg)
+              return comment ?? arg
+            case 'quest_text':
+              tags.push('QUEST')
+              return arg
+            case 'trial':
+              tags.push('TRIAL')
+              return 'Trial of Ascendancy'
+            case 'ascend':
+              tags.push('TRIAL')
+              return `Ascend (${arg})`
+            case 'portal':
+              tags.push('PORT')
+              if (arg === 'set') portalZone = cur.zone
+              else if (portalZone) move = portalZone
+              return 'portal'
+            case 'logout':
+              tags.push('LOG')
+              move = lastTown
+              return 'Logout'
+            case 'arena':
+              tags.push('GO')
+              return arg
+            case 'generic':
+              tags.push('FIND')
+              return arg
+            case 'crafting':
+              tags.push('FIND')
+              return 'crafting recipe'
+            case 'dir':
+              return ARROWS[Math.round(Number(arg) / 45) % 8] ?? arg
+            default:
+              return arg
+          }
+        })
+        .trim()
+
+      lastStep = { text, tags, hints: [] }
+      if (questIds.length) lastStep.quests = questIds
+      cur.steps.push(lastStep)
+
+      if (move) {
+        visits.push(cur)
+        if (moveId.endsWith('_town')) lastTown = move
+        cur = { zone: move, act, steps: [] }
+      }
+    }
+  })
+
+  visits.push(cur)
+  return visits
+}
+
+// Next matching visit for a zone-enter: stay if already there, else scan
+// forward; scan from the top as manual-backtrack recovery.
+export function advance(visits: ZoneVisit[], cur: number, zone: string): number {
+  if (visits[cur]?.zone === zone) return cur
+  for (let i = cur + 1; i < visits.length; i++) if (visits[i].zone === zone) return i
+  for (let i = 0; i < cur; i++) if (visits[i].zone === zone) return i
+  return cur
+}

@@ -1,0 +1,326 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { banditFlags, type PobBuild } from '../../shared/pob'
+import { activeSpecIdx, autoAssign, treeDelta } from '../../shared/trees'
+import { advance } from './route'
+import { buildRoute } from './routeData'
+import { planGems } from './gemPlan'
+import { gemDb } from './gemData'
+import { levelingSet } from '../../shared/pob'
+import { finishRun, fmt, lastCrossing, pbOf, recordActEntry, startRun, type Run } from './pace'
+import { BandView, DenseView, FocusView, MixedView, SplitView, type ViewProps } from './views'
+import { Wizard, type WizardResult } from './wizard'
+
+function load<T>(key: string, fallback: T): T {
+  try {
+    return JSON.parse(localStorage.getItem(key) ?? 'null') ?? fallback
+  } catch {
+    return fallback
+  }
+}
+
+function save<T>(key: string, value: T): T {
+  localStorage.setItem(key, JSON.stringify(value))
+  return value
+}
+
+type View = 'FOCUS' | 'MIXED' | 'DENSE' | 'SPLIT'
+
+export default function App() {
+  const [build, setBuild] = useState<PobBuild | null>(() => load('pob-build', null))
+  // ponytail: owned gems are global, not per-character; profiles fix that later
+  const [owned, setOwned] = useState<Record<string, boolean>>(() => load('owned-gems', {}))
+  const [ui, setUiState] = useState<{ view: View; mirror?: boolean }>(() =>
+    load('ui', { view: 'MIXED' as View, mirror: false })
+  )
+  // short window (e.g. FancyZones band on a portrait monitor) forces the compact band layout
+  const [shortWindow, setShortWindow] = useState(() => window.innerHeight < 520)
+  const [idx, setIdx] = useState(0)
+  const [char, setChar] = useState<{ name: string; level: number } | null>(null)
+  const [logLines, setLogLines] = useState<string[]>([])
+  const [logPath, setLogPath] = useState<string | null>(null)
+  const [tab, setTab] = useState('GEMS')
+  const [leagueStart, setLeagueStart] = useState<boolean>(() => load('league-start', true))
+  const [treeAssign, setTreeAssign] = useState<(number | null)[]>(() => load('tree-assign', []))
+  const [banditOverride, setBanditOverride] = useState<string | null>(() =>
+    load('bandit-override', null)
+  )
+  const [run, setRun] = useState<Run | null>(() => load('pace-run', null))
+  const [history, setHistory] = useState<Run[]>(() => load('pace-history', []))
+  const [now, setNow] = useState(() => Date.now())
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null)
+  const [wizardOpen, setWizardOpen] = useState(() => load<PobBuild | null>('pob-build', null) === null)
+  const [pobSource, setPobSource] = useState<string | null>(() => load('pob-source', null))
+
+  useEffect(() => window.api.onUpdateReady(setUpdateVersion), [])
+
+  // keep the mini overlay window on the same route position
+  useEffect(() => window.api.syncIdx(idx), [idx])
+
+  function setUi(next: { view: View; mirror?: boolean }) {
+    setUiState(save('ui', next))
+  }
+
+  useEffect(() => {
+    const onResize = () => setShortWindow(window.innerHeight < 520)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  const visits = useMemo(
+    () =>
+      buildRoute([
+        ...(leagueStart ? ['LEAGUE_START'] : []),
+        ...banditFlags(banditOverride ?? build?.bandit ?? null)
+      ]),
+    [build, leagueStart, banditOverride]
+  )
+
+  const plan = useMemo(() => {
+    const set = build ? levelingSet(build) : null
+    if (!build || !set) return []
+    return planGems(set.groups.flatMap((g) => g.gems), build.className, visits, gemDb)
+  }, [build, visits])
+
+  const gemColor = useMemo(
+    () => Object.fromEntries(plan.map((g) => [g.gemId, g.color])),
+    [plan]
+  )
+
+  // refs so a burst of log events in one poll tick sees its own updates
+  const idxRef = useRef(idx)
+  const runRef = useRef(run)
+
+  useEffect(() => {
+    const offStatus = window.api.onLogStatus(setLogPath)
+    const offLog = window.api.onLog((e) => {
+      if (e.type === 'line') {
+        setLogLines((l) => [...l.slice(-99), e.line])
+      } else if (e.type === 'level') {
+        setChar({ name: e.name, level: e.level })
+      } else if (e.type === 'enter') {
+        const nowMs = Date.now()
+        const ni = advance(visits, idxRef.current, e.zone)
+        idxRef.current = ni
+        setIdx(ni)
+
+        let r = runRef.current
+        // only a brand-new character can enter the Twilight Strand: always a fresh run
+        // (a logout+login inside the Strand also restarts the clock — acceptable)
+        if (e.zone === visits[0].zone) r = startRun(nowMs)
+        if (r) {
+          r = recordActEntry(r, visits[ni].act, nowMs)
+          if (ni === visits.length - 1 && r.total === null) {
+            r = finishRun(r, nowMs)
+            setHistory((h) => save('pace-history', [...h, r!]))
+          }
+        }
+        if (r !== runRef.current) {
+          runRef.current = r
+          setRun(save('pace-run', r))
+        }
+      }
+    })
+    return () => {
+      offStatus()
+      offLog()
+    }
+  }, [visits])
+
+  // tick the run clock
+  useEffect(() => {
+    if (!run || run.total !== null) return
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [run])
+
+  const cur = visits[Math.min(idx, visits.length - 1)]
+  const due = plan.filter((g) => !g.granted && g.visitIdx <= idx && !owned[g.gemId])
+  const pb = useMemo(() => pbOf(history), [history])
+
+  const assign = useMemo(() => {
+    if (!build) return []
+    return treeAssign.length === build.specs.length
+      ? treeAssign
+      : build.specs.map((s) => autoAssign(s.title))
+  }, [build, treeAssign])
+
+  // linked PoB file: main re-parses on every save; keep manual breakpoint picks by spec title
+  const buildRef = useRef(build)
+  buildRef.current = build
+  const assignRef = useRef(assign)
+  assignRef.current = assign
+
+  useEffect(() => {
+    window.api.watchBuild(pobSource)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(
+    () =>
+      window.api.onBuildUpdated((b) => {
+        const old = new Map(buildRef.current?.specs.map((s, i) => [s.title, assignRef.current[i]]))
+        setTreeAssign(save('tree-assign', b.specs.map((s) => old.get(s.title) ?? autoAssign(s.title))))
+        setBuild(save('pob-build', b))
+      }),
+    []
+  )
+  const treeIdx = build ? activeSpecIdx(assign, cur.act, idx === visits.length - 1) : null
+  const tree = treeIdx !== null && build ? build.specs[treeIdx] : null
+
+  const treeInfo = useMemo(() => {
+    // builds stored before spec nodes were kept need a re-import
+    if (!build || treeIdx === null || !build.specs[treeIdx].nodes?.length) return null
+    return { ...treeDelta(build.specs, assign, treeIdx), title: build.specs[treeIdx].title }
+  }, [build, assign, treeIdx])
+
+  function toggleOwned(gemId: string) {
+    setOwned((o) => save('owned-gems', { ...o, [gemId]: !o[gemId] }))
+  }
+
+  function resetRun() {
+    runRef.current = null
+    setRun(save('pace-run', null))
+  }
+
+  function finishWizard(r: WizardResult) {
+    setBuild(save('pob-build', r.build))
+    setTreeAssign(save('tree-assign', r.treeAssign))
+    setLeagueStart(save('league-start', r.leagueStart))
+    setBanditOverride(save('bandit-override', r.bandit))
+    setPobSource(save('pob-source', r.sourcePath))
+    window.api.watchBuild(r.sourcePath)
+    setWizardOpen(false)
+  }
+
+  const elapsed = run ? (run.total ?? now - run.start) : null
+  const cross = run ? lastCrossing(run) : 1
+  const paceDelta =
+    run && pb && run.splits[cross] !== undefined && pb.splits[cross] !== undefined
+      ? run.splits[cross] - pb.splits[cross]
+      : null
+
+  const viewProps: ViewProps = {
+    visits,
+    idx,
+    setIdx,
+    cur,
+    due,
+    plan,
+    owned,
+    toggleOwned,
+    gemColor,
+    logLines,
+    build,
+    tab,
+    setTab,
+    run,
+    pb,
+    now,
+    resetRun,
+    treeInfo
+  }
+  const band = shortWindow
+  const tailing = logPath !== null
+
+  return (
+    <>
+      <header className="header">
+        <span className={`tail-dot ${tailing ? '' : 'dead'}`} />
+        <span className="char">
+          {char ? `${char.name} · Lv ${char.level}` : 'No character'}
+        </span>
+        <span className="act-chip">ACT {cur.act}</span>
+        <span className="spacer" />
+        <div className={`view-toggle ${band ? 'dimmed' : ''}`}>
+          {(['FOCUS', 'MIXED', 'DENSE', 'SPLIT'] as const).map((v) => (
+            <button
+              key={v}
+              className={ui.view === v ? 'active' : ''}
+              onClick={() => setUi({ ...ui, view: v })}
+            >
+              {v}
+            </button>
+          ))}
+          {ui.view === 'SPLIT' && !band && (
+            <button
+              className={ui.mirror ? 'active' : ''}
+              title="Mirror layout (zone guide on the right)"
+              onClick={() => setUi({ ...ui, mirror: !ui.mirror })}
+            >
+              ⇄
+            </button>
+          )}
+        </div>
+        <button className="import-btn" onClick={() => window.api.toggleMini()}>
+          MINI
+        </button>
+        <button className="import-btn" onClick={() => setWizardOpen(true)}>
+          {build ? `${build.className} · ${build.ascendancy}` : 'SETUP'}
+        </button>
+      </header>
+
+      <main className="main">
+        {wizardOpen ? (
+          <Wizard
+            initial={{
+              build,
+              treeAssign: assign,
+              leagueStart,
+              bandit: banditOverride,
+              sourcePath: pobSource
+            }}
+            logPath={logPath}
+            lastLine={logLines.at(-1) ?? ''}
+            canClose={build !== null}
+            onClose={() => setWizardOpen(false)}
+            onFinish={finishWizard}
+          />
+        ) : band ? (
+          <BandView {...viewProps} />
+        ) : ui.view === 'FOCUS' ? (
+          <FocusView {...viewProps} />
+        ) : ui.view === 'DENSE' ? (
+          <DenseView {...viewProps} />
+        ) : ui.view === 'SPLIT' ? (
+          <SplitView {...viewProps} mirror={!!ui.mirror} />
+        ) : (
+          <MixedView {...viewProps} />
+        )}
+      </main>
+
+      <footer className="footer">
+        {tailing ? (
+          <span className="log-line">{logLines.at(-1) ?? 'tailing…'}</span>
+        ) : (
+          <button className="log-line locate" onClick={() => window.api.pickLog()}>
+            Client.txt not found — click to locate
+          </button>
+        )}
+        <span className="spacer" />
+        {updateVersion && (
+          <button className="footer-chip update-chip" onClick={() => window.api.installUpdate()}>
+            v{updateVersion} READY — RESTART
+          </button>
+        )}
+        {tree && (
+          <span className="footer-chip">
+            TREE {tree.title} · {tree.nodeCount}
+          </span>
+        )}
+        {run && elapsed !== null && (
+          <span className="footer-chip pace-chip">
+            <span
+              className="gem-dot"
+              style={{
+                background:
+                  paceDelta === null ? '#8a93a2' : paceDelta <= 0 ? '#7fc98f' : '#e08b7d'
+              }}
+            />
+            A{cur.act} · {fmt(elapsed)}
+            {paceDelta !== null && ` · ${fmt(paceDelta, true)}`}
+          </span>
+        )}
+      </footer>
+    </>
+  )
+}

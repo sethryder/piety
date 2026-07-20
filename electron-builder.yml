@@ -1,0 +1,16 @@
+appId: com.sethryder.piety
+productName: Piety
+directories:
+  output: dist
+files:
+  - out/**
+  - package.json
+win:
+  target: nsis
+nsis:
+  artifactName: Piety-Setup-${version}.exe
+# must match the GitHub repo exactly once it exists
+publish:
+  provider: github
+  owner: sethryder
+  repo: piety

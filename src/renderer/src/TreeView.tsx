@@ -1,0 +1,212 @@
+import { useMemo, useRef, useState } from 'react'
+
+type TreeNode = { x: number; y: number; k: string; n: string; a?: number; s?: string[] }
+type TreeData = {
+  bounds: { minX: number; minY: number; maxX: number; maxY: number }
+  nodes: Record<string, TreeNode>
+  edges: [string, string][]
+}
+
+// newest vendored tree version wins; update-data.mjs keeps exactly one file around
+const treeFiles = import.meta.glob('./data/tree-*.json', {
+  eager: true,
+  import: 'default'
+}) as Record<string, TreeData>
+const tree = treeFiles[
+  Object.keys(treeFiles).sort((a, b) => {
+    const va = a.match(/tree-(\d+)_(\d+)/)!.slice(1).map(Number)
+    const vb = b.match(/tree-(\d+)_(\d+)/)!.slice(1).map(Number)
+    return va[0] - vb[0] || va[1] - vb[1]
+  }).at(-1)!
+]
+
+const R: Record<string, number> = { n: 28, o: 44, k: 58, j: 34, m: 30, s: 20 }
+
+type Box = { x: number; y: number; w: number; h: number }
+
+function fitBox(ids: Iterable<string>, fallback: Box, includeAsc = false): Box {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  for (const id of ids) {
+    const n = tree.nodes[id]
+    if (!n) continue
+    // the ascendancy cluster sits far off to the side and wrecks the zoom
+    if (n.a && !includeAsc) continue
+    minX = Math.min(minX, n.x); minY = Math.min(minY, n.y)
+    maxX = Math.max(maxX, n.x); maxY = Math.max(maxY, n.y)
+  }
+  if (minX === Infinity) {
+    return includeAsc ? fallback : fitBox(ids, fallback, true) // ascendancy-only stretch
+  }
+  const pad = 600
+  return { x: minX - pad, y: minY - pad, w: maxX - minX + pad * 2, h: maxY - minY + pad * 2 }
+}
+
+export function TreeView({
+  allocated,
+  added,
+  removed,
+  title
+}: {
+  allocated: Set<string>
+  added: string[]
+  removed: string[]
+  title: string
+}) {
+  const addedSet = useMemo(() => new Set(added), [added])
+  const removedSet = useMemo(() => new Set(removed), [removed])
+  const full: Box = {
+    x: tree.bounds.minX,
+    y: tree.bounds.minY,
+    w: tree.bounds.maxX - tree.bounds.minX,
+    h: tree.bounds.maxY - tree.bounds.minY
+  }
+  const [box, setBox] = useState<Box>(() =>
+    fitBox(added.length ? added : allocated, full)
+  )
+  const [hover, setHover] = useState<{ x: number; y: number; node: TreeNode } | null>(null)
+  const drag = useRef<{ px: number; py: number } | null>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  function showTip(e: React.MouseEvent, node: TreeNode) {
+    if (drag.current || !wrapRef.current) return
+    const rect = wrapRef.current.getBoundingClientRect()
+    setHover({ x: e.clientX - rect.left, y: e.clientY - rect.top, node })
+  }
+
+  // static scene, memoized once per delta; pan/zoom only touches the viewBox attr
+  const scene = useMemo(() => {
+    const els: React.JSX.Element[] = []
+    for (const [a, b] of tree.edges) {
+      const na = tree.nodes[a]
+      const nb = tree.nodes[b]
+      const on = allocated.has(a) && allocated.has(b)
+      const hot = on && (addedSet.has(a) || addedSet.has(b))
+      els.push(
+        <line
+          key={`e${a}-${b}`}
+          x1={na.x} y1={na.y} x2={nb.x} y2={nb.y}
+          stroke={hot ? '#7fc98f' : on ? '#d7a94e' : '#1a1f27'}
+          strokeWidth={on ? 14 : 8}
+        />
+      )
+    }
+    for (const [id, n] of Object.entries(tree.nodes)) {
+      const isAdded = addedSet.has(id)
+      const isRemoved = removedSet.has(id)
+      const isOn = allocated.has(id)
+      if (n.k === 'm' && !isOn && !isRemoved) continue // unallocated masteries are noise
+      const fill = isAdded ? '#7fc98f' : isOn ? '#d7a94e' : '#232933'
+      els.push(
+        <circle
+          key={id}
+          cx={n.x} cy={n.y} r={R[n.k] ?? 28}
+          fill={fill}
+          stroke={isRemoved ? '#e08b7d' : isAdded ? '#7fc98f' : 'none'}
+          strokeWidth={isRemoved ? 12 : isAdded ? 10 : 0}
+          strokeOpacity={isAdded ? 0.35 : 1}
+          fillOpacity={isRemoved && !isOn ? 0.25 : 1}
+          onMouseEnter={(e) => showTip(e, n)}
+          onMouseLeave={() => setHover(null)}
+        />
+      )
+    }
+    return els
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allocated, addedSet, removedSet])
+
+  function onWheel(e: React.WheelEvent) {
+    const svg = svgRef.current
+    if (!svg) return
+    const rect = svg.getBoundingClientRect()
+    const mx = box.x + ((e.clientX - rect.left) / rect.width) * box.w
+    const my = box.y + ((e.clientY - rect.top) / rect.height) * box.h
+    const f = e.deltaY > 0 ? 1.25 : 0.8
+    const w = Math.min(Math.max(box.w * f, 1500), full.w * 1.2)
+    const h = (w / box.w) * box.h
+    setBox({ x: mx - ((mx - box.x) / box.w) * w, y: my - ((my - box.y) / box.h) * h, w, h })
+  }
+
+  function onPointerDown(e: React.PointerEvent) {
+    drag.current = { px: e.clientX, py: e.clientY }
+    setHover(null)
+    ;(e.target as Element).setPointerCapture(e.pointerId)
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (!drag.current) return
+    const svg = svgRef.current
+    if (!svg) return
+    const rect = svg.getBoundingClientRect()
+    const dx = ((e.clientX - drag.current.px) / rect.width) * box.w
+    const dy = ((e.clientY - drag.current.py) / rect.height) * box.h
+    drag.current = { px: e.clientX, py: e.clientY }
+    setBox((b) => ({ ...b, x: b.x - dx, y: b.y - dy }))
+  }
+
+  const notables = added
+    .map((id) => tree.nodes[id])
+    .filter((n) => n && (n.k === 'o' || n.k === 'k'))
+    .map((n) => n.n)
+  const smalls = added.length - notables.length
+
+  return (
+    <div className="tree-view">
+      <div className="tree-head">
+        <span className="micro-label">TREE · {title}</span>
+        <span className="tree-summary">
+          {added.length > 0
+            ? `+${added.length} points this stretch` +
+              (removed.length ? ` · ${removed.length} refunded` : '')
+            : 'no new points in this stretch'}
+        </span>
+        <span className="spacer" />
+        <button className="wpicker-btn" onClick={() => setBox(fitBox(added.length ? added : allocated, full))}>
+          FIT
+        </button>
+        <button className="wpicker-btn" onClick={() => setBox(full)}>
+          ALL
+        </button>
+      </div>
+      <div className="tree-wrap" ref={wrapRef}>
+        <svg
+          ref={svgRef}
+          className="tree-svg"
+          viewBox={`${box.x} ${box.y} ${box.w} ${box.h}`}
+          onWheel={onWheel}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={() => (drag.current = null)}
+        >
+          {scene}
+        </svg>
+        {hover && (
+          <div
+            className="tree-tip"
+            style={{
+              left: Math.min(hover.x + 14, (wrapRef.current?.clientWidth ?? 400) - 240),
+              top: hover.y + 14
+            }}
+          >
+            <div className="tree-tip-name">{hover.node.n || 'Passive'}</div>
+            {hover.node.s?.map((s, i) => (
+              <div key={i} className="tree-tip-stat">
+                {s}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      {added.length > 0 && (
+        <div className="tree-list">
+          {notables.map((n) => (
+            <span key={n} className="socket-chip tree-notable">
+              {n}
+            </span>
+          ))}
+          {smalls > 0 && <span className="whint">+{smalls} small passives</span>}
+        </div>
+      )}
+    </div>
+  )
+}

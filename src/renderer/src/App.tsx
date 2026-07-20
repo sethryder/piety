@@ -64,6 +64,7 @@ export default function App() {
   const [pobSource, setPobSource] = useState<string | null>(() => load('pob-source', null))
   const [accent, setAccent] = useState<string>(() => load('accent', '#d7a94e'))
   const [autoView, setAutoView] = useState<boolean>(() => load('auto-view', false))
+  const [miniAutoFit, setMiniAutoFit] = useState<boolean>(() => load('mini-autofit', true))
   // auto view: FOCUS while in the wilderness, the user's chosen view in town.
   // Transient — a manual view click overrides until the next zone change.
   const [autoFocus, setAutoFocus] = useState(false)
@@ -553,6 +554,14 @@ export default function App() {
                   onChange={(e) => setAutoView(save('auto-view', e.target.checked))}
                 />
                 Auto view — FOCUS in the wilderness, your chosen view in town
+              </label>
+              <label className="settings-row">
+                <input
+                  type="checkbox"
+                  checked={miniAutoFit}
+                  onChange={(e) => setMiniAutoFit(save('mini-autofit', e.target.checked))}
+                />
+                Mini auto-height — the mini window resizes to fit each step
               </label>
             </section>
             <section className="settings-section">

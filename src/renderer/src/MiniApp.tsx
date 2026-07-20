@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { banditFlags, levelingSet, type PobBuild } from '../../shared/pob'
 import { buildRoute } from './routeData'
 import { planGems } from './gemPlan'
@@ -32,6 +32,8 @@ export default function MiniApp() {
   const [areaLevel, setAreaLevel] = useState<number | null>(null)
   const [locked, setLocked] = useState<boolean>(() => load('mini-locked', false))
   const [showMap, setShowMap] = useState<boolean>(() => load('mini-map', true))
+  const [autoFit, setAutoFit] = useState<boolean>(() => load('mini-autofit', true))
+  const bodyRef = useRef<HTMLDivElement>(null)
   const [now, setNow] = useState(() => Date.now())
   // freeze the clock while the game is closed; the main window rebases run.start
   // on resume and the storage event delivers the shifted run here
@@ -46,6 +48,7 @@ export default function MiniApp() {
       setLibrary(load('library', true))
       setBanditOverride(load('bandit-override', null))
       setRun(load('pace-run', null))
+      setAutoFit(load('mini-autofit', true))
     }
     window.addEventListener('storage', refresh)
     return () => window.removeEventListener('storage', refresh)
@@ -99,6 +102,39 @@ export default function MiniApp() {
   const due = plan.filter((g) => !g.granted && g.visitIdx <= idx && !owned[g.gemId])
   const next = visits[idx + 1]
   const elapsed = run ? (run.total ?? (pausedSince ?? now) - run.start) : null
+
+  // content-driven height: measure what the body wants and ask main to fit the
+  // window; width stays user-driven. mini-main stretches (flex: 1) so its own
+  // height just echoes the window — sum its children instead. Deps re-observe
+  // after React swaps conditional blocks; the ResizeObserver catches layout-only
+  // changes (async map image loads, width-driven rewrap).
+  useEffect(() => {
+    const body = bodyRef.current
+    if (!autoFit || !body) return
+    const natural = (el: HTMLElement) => {
+      const kids = ([...el.children] as HTMLElement[]).filter((k) => k.offsetWidth > 0)
+      const gap = parseFloat(getComputedStyle(el).rowGap) || 0
+      return kids.reduce((a, k) => a + k.offsetHeight, 0) + gap * Math.max(0, kids.length - 1)
+    }
+    const report = () => {
+      const cols = ([...body.children] as HTMLElement[]).filter((k) => k.offsetWidth > 0)
+      const row = getComputedStyle(body).flexDirection === 'row'
+      const heights = cols.map(natural)
+      const gap = parseFloat(getComputedStyle(body).rowGap) || 0
+      const content = row
+        ? Math.max(0, ...heights)
+        : heights.reduce((a, h) => a + h, 0) + gap * Math.max(0, cols.length - 1)
+      const cs = getComputedStyle(body)
+      const chrome = window.innerHeight - body.clientHeight // bar + borders
+      window.api.fitMiniHeight(
+        Math.ceil(chrome + content + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom))
+      )
+    }
+    const ro = new ResizeObserver(report)
+    for (const el of body.querySelectorAll('*')) ro.observe(el)
+    report()
+    return () => ro.disconnect()
+  }, [autoFit, showMap, cur, due.length, next])
 
   function step(d: number) {
     const ni = Math.min(Math.max(idx + d, 0), visits.length - 1)
@@ -162,7 +198,7 @@ export default function MiniApp() {
           ✕
         </button>
       </div>
-      <div className="mini-body">
+      <div className="mini-body" ref={bodyRef}>
         <div className="mini-main">
           <h2 className="mini-zone">{cur.zone}</h2>
           <ul className="steps mini-steps">

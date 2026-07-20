@@ -4,7 +4,7 @@ Piety is a desktop companion for leveling through the Path of Exile campaign. It
 
 It is built for a second monitor. Not an in-game overlay, just a normal window you can snap wherever you want, plus an optional small always-on-top window for single monitor setups.
 
-<!-- screenshot: drop a main-window capture here, e.g. ![Piety](docs/screenshot.png) -->
+![Piety main window](assets/screenshot.png)
 
 ## Features
 

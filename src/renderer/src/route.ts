@@ -162,9 +162,19 @@ function scan(visits: ZoneVisit[], cur: number, match: (v: ZoneVisit) => boolean
   return cur
 }
 
+// Towns are hubs: selling trips, deaths, and gem-vendor detours land in one
+// constantly. A town match only moves the position when it's adjacent to the
+// current visit — planned transitions always are — so an unscheduled town trip
+// never yanks the guide forward or back.
+// ponytail: a second character wandering NON-town zones on the same client can
+// still yank position; per-character log filtering is the upgrade if that bites
+function guardTown(visits: ZoneVisit[], cur: number, ni: number): number {
+  return visits[ni].areaId.endsWith('_town') && Math.abs(ni - cur) > 1 ? cur : ni
+}
+
 export const advance = (visits: ZoneVisit[], cur: number, zone: string): number =>
-  scan(visits, cur, (v) => v.zone === zone)
+  guardTown(visits, cur, scan(visits, cur, (v) => v.zone === zone))
 
 // Primary tracking: area ids from "Generating level" log lines, language-independent.
 export const advanceById = (visits: ZoneVisit[], cur: number, areaId: string): number =>
-  scan(visits, cur, (v) => v.areaId === areaId)
+  guardTown(visits, cur, scan(visits, cur, (v) => v.areaId === areaId))

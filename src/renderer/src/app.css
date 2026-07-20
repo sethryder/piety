@@ -1368,6 +1368,17 @@ button.pace-chip:hover {
   border-color: var(--accent);
 }
 
+.cog-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 6px;
+}
+
+.cog-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 .import-actions {
   display: flex;
   gap: 8px;

@@ -168,4 +168,13 @@ test('real route files parse clean', () => {
     v.some((x) => x.areaId === 'Labyrinth_Airlock' && x.zone === "Aspirants' Plaza"),
     'Labyrinth_Airlock visit missing'
   )
+
+  // LIBRARY gates the Act 3 Library detour and its a3q12 hand-in (Siosa's gems)
+  assert.ok(!v.some((x) => x.areaId === '1_3_17_1'), 'Library visited without LIBRARY flag')
+  const lib = parseRoute(files, new Set(['LEAGUE_START', 'LIBRARY']))
+  assert.ok(lib.some((x) => x.areaId === '1_3_17_1'), 'Library visit missing with LIBRARY flag')
+  assert.ok(
+    lib.some((x) => x.steps.some((s) => s.quests?.includes('a3q12'))),
+    'a3q12 hand-in missing with LIBRARY flag'
+  )
 })

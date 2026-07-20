@@ -1722,3 +1722,126 @@ button.pace-chip:hover {
   font-weight: 700;
   max-width: 600px;
 }
+
+/* ---- ROUTE EDITOR ---- */
+.route-editor {
+  gap: 10px;
+}
+
+.route-toolbar,
+.route-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.route-toolbar select,
+.route-row select {
+  background: var(--bg-chrome);
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 5px 8px;
+}
+
+.route-name {
+  background: var(--bg-chrome);
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 5px 8px;
+}
+
+/* highlight overlay: a <pre> renders the colors behind a transparent-text
+   textarea; both share font metrics and scroll in sync */
+.route-code {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.route-hl,
+.route-text {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 10px 12px;
+  font: 500 12px/1.6 var(--font-mono);
+  white-space: pre;
+  tab-size: 4;
+}
+
+.route-hl {
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+.route-text {
+  background: transparent;
+  border: none;
+  color: transparent;
+  caret-color: var(--text-primary);
+  resize: none;
+  overflow: auto;
+}
+
+.route-text::selection {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.rd-dir {
+  color: #c39ad9;
+}
+
+.rd-flag {
+  color: #c39ad9;
+  font-weight: 700;
+}
+
+.rd-frag {
+  color: var(--accent);
+}
+
+.rd-arg {
+  color: #7aa7d9;
+}
+
+.rd-comment {
+  color: var(--text-secondary);
+}
+
+.rd-bad {
+  color: var(--negative);
+  text-decoration: underline wavy;
+  text-underline-offset: 3px;
+}
+
+.rl-err {
+  background: color-mix(in srgb, var(--negative) 12%, transparent);
+}
+
+.tab-err {
+  color: var(--negative);
+  font-size: 7px;
+  vertical-align: super;
+  margin-left: 2px;
+}
+
+.route-issues {
+  color: var(--negative);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.route-stat {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}

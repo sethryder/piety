@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { banditFlags, levelingSet, type PobBuild } from '../../shared/pob'
-import { buildRoute } from './routeData'
+import { activeRouteTexts, buildRoute } from './routeData'
 import { dueTrials, tickTrials } from './route'
 import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
@@ -37,6 +37,7 @@ export default function MiniApp() {
   const [showMap, setShowMap] = useState<boolean>(() => load('mini-map', true))
   const [autoFit, setAutoFit] = useState<boolean>(() => load('mini-autofit', true))
   const [showDue, setShowDue] = useState<boolean>(() => load('mini-due', true))
+  const [routeTexts, setRouteTexts] = useState<string[]>(() => activeRouteTexts())
   const bodyRef = useRef<HTMLDivElement>(null)
   const [now, setNow] = useState(() => Date.now())
   // freeze the clock while the game is closed; the main window rebases run.start
@@ -56,6 +57,11 @@ export default function MiniApp() {
       setRun(load('pace-run', null))
       setAutoFit(load('mini-autofit', true))
       setShowDue(load('mini-due', true))
+      // keep the old array identity when unchanged so the visits memo holds
+      setRouteTexts((old) => {
+        const next = activeRouteTexts()
+        return next.length === old.length && next.every((t, i) => t === old[i]) ? old : next
+      })
     }
     window.addEventListener('storage', refresh)
     return () => window.removeEventListener('storage', refresh)
@@ -91,12 +97,15 @@ export default function MiniApp() {
 
   const visits = useMemo(
     () =>
-      buildRoute([
-        ...(leagueStart ? ['LEAGUE_START'] : []),
-        ...(library ? ['LIBRARY'] : []),
-        ...banditFlags(banditOverride ?? build?.bandit ?? null)
-      ]),
-    [build, leagueStart, library, banditOverride]
+      buildRoute(
+        [
+          ...(leagueStart ? ['LEAGUE_START'] : []),
+          ...(library ? ['LIBRARY'] : []),
+          ...banditFlags(banditOverride ?? build?.bandit ?? null)
+        ],
+        routeTexts
+      ),
+    [build, leagueStart, library, banditOverride, routeTexts]
   )
 
   const plan = useMemo(() => {

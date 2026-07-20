@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { banditFlags, classMatches, type PobBuild } from '../../shared/pob'
 import { activeSpecIdx, autoAssign, treeDelta } from '../../shared/trees'
 import { advance, advanceById, dueTrials, tickTrials } from './route'
-import { buildRoute } from './routeData'
+import { buildRoute, defaultTexts } from './routeData'
+import { RouteEditor } from './RouteEditor'
 import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
 import { levelingSet } from '../../shared/pob'
@@ -59,6 +60,11 @@ export default function App() {
   )
   const [paceOpen, setPaceOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [routesOpen, setRoutesOpen] = useState(false)
+  const [routes, setRoutesState] = useState<Record<string, string[]>>(() => load('routes', {}))
+  const [activeRoute, setActiveRouteState] = useState<string>(() => load('active-route', ''))
+  const setRoutes = (r: Record<string, string[]>) => setRoutesState(save('routes', r))
+  const setActiveRoute = (n: string) => setActiveRouteState(save('active-route', n))
   const [appVersion, setAppVersion] = useState('')
   const [beta, setBeta] = useState(false)
   const [updateMsg, setUpdateMsg] = useState<string | null>(null)
@@ -125,14 +131,17 @@ export default function App() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  const visits = useMemo(
-    () =>
-      buildRoute([
-        ...(leagueStart ? ['LEAGUE_START'] : []),
-        ...(library ? ['LIBRARY'] : []),
-        ...banditFlags(banditOverride ?? build?.bandit ?? null)
-      ]),
+  const routeFlags = useMemo(
+    () => [
+      ...(leagueStart ? ['LEAGUE_START'] : []),
+      ...(library ? ['LIBRARY'] : []),
+      ...banditFlags(banditOverride ?? build?.bandit ?? null)
+    ],
     [build, leagueStart, library, banditOverride]
+  )
+  const visits = useMemo(
+    () => buildRoute(routeFlags, routes[activeRoute] ?? defaultTexts),
+    [routeFlags, routes, activeRoute]
   )
 
   const plan = useMemo(() => {
@@ -195,7 +204,7 @@ export default function App() {
   // arrow keys step the route; the header ◀ ▶ targets are small for mid-game use
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (wizardOpen || settingsOpen) return
+      if (wizardOpen || settingsOpen || routesOpen) return
       const t = e.target as HTMLElement
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)) return
       if (e.key === 'ArrowLeft' && idxRef.current > 0) {
@@ -209,7 +218,7 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visits, wizardOpen, settingsOpen])
+  }, [visits, wizardOpen, settingsOpen, routesOpen])
 
   // route options changed (league start / bandit): the visits array may have
   // shrunk, so clamp the tracked position
@@ -621,6 +630,31 @@ export default function App() {
               </label>
             </section>
             <section className="settings-section">
+              <span className="micro-label">ROUTE</span>
+              <div className="route-row">
+                <select
+                  value={routes[activeRoute] ? activeRoute : ''}
+                  onChange={(e) => setActiveRoute(e.target.value)}
+                >
+                  <option value="">Default (built-in)</option>
+                  {Object.keys(routes).map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="import-btn"
+                  onClick={() => {
+                    setSettingsOpen(false)
+                    setRoutesOpen(true)
+                  }}
+                >
+                  EDIT ROUTES
+                </button>
+              </div>
+            </section>
+            <section className="settings-section">
               <span className="micro-label">UPDATES</span>
               <label className="settings-row">
                 <input
@@ -651,6 +685,15 @@ export default function App() {
               </p>
             </section>
           </div>
+        ) : routesOpen ? (
+          <RouteEditor
+            routes={routes}
+            active={activeRoute}
+            setRoutes={setRoutes}
+            setActive={setActiveRoute}
+            flags={routeFlags}
+            onClose={() => setRoutesOpen(false)}
+          />
         ) : paceOpen ? (
           <div className="pace-full">
             <div className="pace-full-head">

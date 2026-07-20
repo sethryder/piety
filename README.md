@@ -26,6 +26,10 @@ It is built for a second monitor. Not an in-game overlay, just a normal window y
 
 If you use the mini overlay on top of the game, run PoE in Windowed Fullscreen. Exclusive fullscreen draws over everything.
 
+### Linux
+
+Download `Piety-*.AppImage` from Releases, make it executable (`chmod +x`), and run it. PoE installed through Steam/Proton is detected automatically, including libraries on other drives. If Path of Building runs under Wine or Lutris, builds in the default prefix are found too; set `POB_BUILDS_DIR` for custom prefixes. Known limitation: the mini overlay's always-on-top depends on your compositor, and some Wayland desktops ignore it (X11 is fine).
+
 ## Development
 
 ```bash

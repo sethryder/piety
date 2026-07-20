@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Piety — Path of Exile campaign leveling companion",
   "main": "out/main/index.js",
+  "desktopName": "piety.desktop",
   "private": true,
   "scripts": {
     "dev": "electron-vite dev",
@@ -10,8 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test \"test/*.test.ts\"",
     "package:win": "electron-vite build && electron-builder --win --x64",
+    "package:linux": "electron-vite build && electron-builder --linux --x64",
     "update-data": "node scripts/update-data.mjs",
-    "release": "electron-vite build && electron-builder --win --x64 --publish always"
+    "release": "electron-vite build && electron-builder --win --linux --x64 --publish always"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",

@@ -51,10 +51,14 @@ ipcMain.handle('pob-import', async (_e, input: string) => {
   return parsePob(decodePobCode(code))
 })
 
-const pobBuildsDir = () =>
-  process.env.POB_BUILDS_DIR ?? join(app.getPath('documents'), 'Path of Building', 'Builds')
+const pobBuildsDirs = () => [
+  ...(process.env.POB_BUILDS_DIR ? [process.env.POB_BUILDS_DIR] : []),
+  join(app.getPath('documents'), 'Path of Building', 'Builds'),
+  // Linux: PoB running under Wine/Lutris keeps builds in the prefix's Documents
+  join(app.getPath('home'), '.wine/drive_c/users', process.env.USER ?? '', 'Documents/Path of Building/Builds')
+]
 
-ipcMain.handle('pob-list', () => listBuildFiles(pobBuildsDir()))
+ipcMain.handle('pob-list', () => pobBuildsDirs().flatMap((d) => listBuildFiles(d)))
 ipcMain.handle('pob-read', (_e, path: string) => parsePob(readFileSync(path, 'utf8')))
 
 // Watch a linked PoB build file; every save in PoB re-parses and pushes to all windows.

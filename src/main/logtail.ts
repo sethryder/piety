@@ -21,14 +21,23 @@ export function parseLine(line: string): LogEvent | null {
 }
 
 // Auto-detect fallback; a user-picked path is saved in config.json and wins.
+const HOME = process.env.HOME ?? ''
 const CANDIDATES = [
   'C:\\Program Files (x86)\\Grinding Gear Games\\Path of Exile\\logs\\Client.txt',
   'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Path of Exile\\logs\\Client.txt',
   '/mnt/c/Program Files (x86)/Grinding Gear Games/Path of Exile/logs/Client.txt',
-  '/mnt/c/Program Files (x86)/Steam/steamapps/common/Path of Exile/logs/Client.txt'
+  '/mnt/c/Program Files (x86)/Steam/steamapps/common/Path of Exile/logs/Client.txt',
+  // Linux: PoE under Proton still writes into the normal Steam game dir
+  `${HOME}/.local/share/Steam/steamapps/common/Path of Exile/logs/Client.txt`,
+  `${HOME}/.steam/steam/steamapps/common/Path of Exile/logs/Client.txt`
 ]
 
-const STEAM_ROOTS = ['C:\\Program Files (x86)\\Steam', '/mnt/c/Program Files (x86)/Steam']
+const STEAM_ROOTS = [
+  'C:\\Program Files (x86)\\Steam',
+  '/mnt/c/Program Files (x86)/Steam',
+  `${HOME}/.local/share/Steam`,
+  `${HOME}/.steam/steam`
+]
 
 // Steam library folders from libraryfolders.vdf ("path" entries, backslashes escaped).
 export function parseLibraryFolders(vdf: string): string[] {

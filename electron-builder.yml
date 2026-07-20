@@ -9,6 +9,12 @@ win:
   target: nsis
 nsis:
   artifactName: Piety-Setup-${version}.exe
+linux:
+  target: AppImage
+  icon: build/piety-512.png
+  category: Utility
+  artifactName: Piety-${version}.AppImage
+  syncDesktopName: true
 # must match the GitHub repo exactly once it exists
 publish:
   provider: github

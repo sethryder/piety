@@ -25,8 +25,12 @@ export function ZoneLayout({ areaId }: { areaId: string }) {
   return (
     <div
       className="zone-layout"
-      title={imgs.length > 1 ? 'Click for the next layout variant' : undefined}
+      title={imgs.length > 1 ? 'Click: next layout variant · right-click: previous' : undefined}
       onClick={() => setI((idx + 1) % imgs.length)}
+      onContextMenu={(e) => {
+        e.preventDefault()
+        setI((idx - 1 + imgs.length) % imgs.length)
+      }}
     >
       <img src={imgs[idx]} alt="zone layout" />
       {imgs.length > 1 && (

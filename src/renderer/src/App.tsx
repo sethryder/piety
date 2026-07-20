@@ -42,6 +42,7 @@ export default function App() {
   const [logPath, setLogPath] = useState<string | null>(null)
   const [tab, setTab] = useState('GEMS')
   const [leagueStart, setLeagueStart] = useState<boolean>(() => load('league-start', true))
+  const [library, setLibrary] = useState<boolean>(() => load('library', true))
   const [treeAssign, setTreeAssign] = useState<(number | null)[]>(() => load('tree-assign', []))
   const [banditOverride, setBanditOverride] = useState<string | null>(() =>
     load('bandit-override', null)
@@ -111,9 +112,10 @@ export default function App() {
     () =>
       buildRoute([
         ...(leagueStart ? ['LEAGUE_START'] : []),
+        ...(library ? ['LIBRARY'] : []),
         ...banditFlags(banditOverride ?? build?.bandit ?? null)
       ]),
-    [build, leagueStart, banditOverride]
+    [build, leagueStart, library, banditOverride]
   )
 
   const plan = useMemo(() => {
@@ -172,6 +174,25 @@ export default function App() {
     idxRef.current = i
     setIdx(i)
   }
+
+  // arrow keys step the route; the header ◀ ▶ targets are small for mid-game use
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (wizardOpen || settingsOpen) return
+      const t = e.target as HTMLElement
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)) return
+      if (e.key === 'ArrowLeft' && idxRef.current > 0) {
+        e.preventDefault()
+        jumpTo(idxRef.current - 1)
+      } else if (e.key === 'ArrowRight' && idxRef.current < visits.length - 1) {
+        e.preventDefault()
+        jumpTo(idxRef.current + 1)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visits, wizardOpen, settingsOpen])
 
   // route options changed (league start / bandit): the visits array may have
   // shrunk, so clamp the tracked position
@@ -356,6 +377,7 @@ export default function App() {
     setBuild(save('pob-build', r.build))
     setTreeAssign(save('tree-assign', r.treeAssign))
     setLeagueStart(save('league-start', r.leagueStart))
+    setLibrary(save('library', r.library))
     setBanditOverride(save('bandit-override', r.bandit))
     setPobSource(save('pob-source', r.sourcePath))
     window.api.watchBuild(r.sourcePath)
@@ -419,7 +441,7 @@ export default function App() {
           areaLv={areaLevel}
           town={cur.areaId.endsWith('_town')}
         />
-        {run && runNo > 0 && <span className="act-chip">RUN {runNo}</span>}
+        {run && runNo > 0 && <span className="act-chip run-chip">RUN {runNo}</span>}
         <span className="step-btns">
           <button
             className="import-btn"
@@ -483,6 +505,7 @@ export default function App() {
               build,
               treeAssign: assign,
               leagueStart,
+              library,
               bandit: banditOverride,
               sourcePath: pobSource
             }}
@@ -624,13 +647,11 @@ export default function App() {
               className="gem-dot"
               style={{
                 background:
-                  pausedSince !== null
+                  pausedSince !== null || paceDelta === null
                     ? '#8a93a2'
-                    : paceDelta === null
-                      ? '#8a93a2'
-                      : paceDelta <= 0
-                        ? '#7fc98f'
-                        : '#e08b7d'
+                    : paceDelta <= 0
+                      ? 'var(--positive)'
+                      : 'var(--negative)'
               }}
             />
             A{cross} · {fmt(chipTime)}

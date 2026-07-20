@@ -87,7 +87,8 @@ export function TreeView({
         <line
           key={`e${a}-${b}`}
           x1={na.x} y1={na.y} x2={nb.x} y2={nb.y}
-          stroke={hot ? '#7fc98f' : on ? '#d7a94e' : '#1a1f27'}
+          // style, not attribute: var() only resolves as a CSS property
+          style={{ stroke: hot ? 'var(--positive)' : on ? 'var(--accent)' : '#1a1f27' }}
           strokeWidth={on ? 14 : 8}
         />
       )
@@ -97,13 +98,14 @@ export function TreeView({
       const isRemoved = removedSet.has(id)
       const isOn = allocated.has(id)
       if (n.k === 'm' && !isOn && !isRemoved) continue // unallocated masteries are noise
-      const fill = isAdded ? '#7fc98f' : isOn ? '#d7a94e' : '#232933'
       els.push(
         <circle
           key={id}
           cx={n.x} cy={n.y} r={R[n.k] ?? 28}
-          fill={fill}
-          stroke={isRemoved ? '#e08b7d' : isAdded ? '#7fc98f' : 'none'}
+          style={{
+            fill: isAdded ? 'var(--positive)' : isOn ? 'var(--accent)' : '#232933',
+            stroke: isRemoved ? 'var(--negative)' : isAdded ? 'var(--positive)' : 'none'
+          }}
           strokeWidth={isRemoved ? 12 : isAdded ? 10 : 0}
           strokeOpacity={isAdded ? 0.35 : 1}
           fillOpacity={isRemoved && !isOn ? 0.25 : 1}

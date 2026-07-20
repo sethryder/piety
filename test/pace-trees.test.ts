@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { actEnd, actSegment, actStart, bestSegments, finishRun, fmt, lastCrossing, pbOf, rebaseStart, recordActEntry, recordZoneEntry, startRun, worthStashing } from '../src/renderer/src/pace.ts'
+import { actEnd, actSegment, actStart, bestSegments, finishRun, fmt, lastCrossing, pbOf, rebaseStart, recordActEntry, recordDeath, recordZoneEntry, startRun, totalDeaths, worthStashing } from '../src/renderer/src/pace.ts'
 import { activeSpecIdx, autoAssign, BREAKPOINTS, treeDelta } from '../src/shared/trees.ts'
 import { parseLibraryFolders } from '../src/main/logtail.ts'
 import { decodePobCode } from '../src/main/pob.ts'
@@ -33,8 +33,15 @@ test('run lifecycle and splits', () => {
   assert.deepEqual(run.zones, { 0: 0, 1: 30_000 })
   const legacy = recordZoneEntry({ start: t0, splits: {}, total: null }, 2, t0 + 5_000)
   assert.deepEqual(legacy.zones, { 2: 5_000 }) // runs stored before zones existed
+  run = recordDeath(run, 2)
+  run = recordDeath(run, 3)
+  run = recordDeath(run, 3)
+  assert.deepEqual(run.deaths, { 2: 1, 3: 2 })
+  assert.equal(totalDeaths(run), 3)
+  assert.equal(totalDeaths({ start: t0, splits: {}, total: null }), 0) // pre-deaths runs
   run = finishRun(run, t0 + 200_000)
   assert.equal(run.total, 200_000)
+  assert.equal(recordDeath(run, 3).deaths![3], 2) // no post-run deaths
   assert.equal(recordZoneEntry(run, 5, t0 + 250_000).zones![5], undefined) // no post-run entries
   assert.equal(actEnd(run, 10), 200_000)
 

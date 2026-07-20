@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import type { PobBuild } from '../../shared/pob'
 import { levelingSet } from '../../shared/pob'
 import type { GemPlanEntry } from './gemPlan'
-import { actSegment, actStart, bestSegments, fmt, lastCrossing, type Run } from './pace'
+import { actSegment, actStart, bestSegments, fmt, lastCrossing, totalDeaths, type Run } from './pace'
 import type { Step, ZoneVisit } from './route'
 import { levelStatus } from '../../shared/xp'
 import { TreeView } from './TreeView'
@@ -298,7 +298,10 @@ function RunHistory({ history, pb }: { history: Run[]; pb: Run | null }) {
             return (
               <tr key={i}>
                 <td className="split-act">RUN {i + 1}</td>
-                <td className="split-date">{new Date(h.start).toLocaleDateString()}</td>
+                <td className="split-date">
+                  {new Date(h.start).toLocaleDateString()}
+                  {totalDeaths(h) > 0 && <span className="split-deaths"> ☠{totalDeaths(h)}</span>}
+                </td>
                 <td className="split-time">{h.total !== null ? fmt(h.total) : '—'}</td>
                 <td className={`split-delta ${h === pb ? 'ahead' : d === null ? '' : d <= 0 ? 'ahead' : 'behind'}`}>
                   {h === pb ? 'PB' : d !== null ? fmt(d, true) : `A${lastCrossing(h)}`}
@@ -342,7 +345,10 @@ export function PaceView({ run, pb, history, now, paused, visits, resetRun }: Pi
     <div className="pace">
       <div className="pace-cards">
         <div className="pace-card">
-          <span className="micro-label">RUN TIME{paused && ' · PAUSED'}</span>
+          <span className="micro-label">
+            RUN TIME{paused && ' · PAUSED'}
+            {totalDeaths(run) > 0 && <span className="split-deaths"> · ☠{totalDeaths(run)}</span>}
+          </span>
           <span className="pace-clock">{fmt(elapsed)}</span>
           {delta !== null && (
             <span className={`pace-delta ${delta <= 0 ? 'ahead' : 'behind'}`}>
@@ -384,7 +390,10 @@ export function PaceView({ run, pb, history, now, paused, visits, resetRun }: Pi
                   onClick={() => setOpenAct(openAct === act ? null : act)}
                 >
                   <td className="split-mark">{state === 'done' ? '✓' : state === 'current' ? '▶' : '·'}</td>
-                  <td className="split-act">ACT {act}</td>
+                  <td className="split-act">
+                    ACT {act}
+                    {(run.deaths?.[act] ?? 0) > 0 && <span className="split-deaths"> ☠{run.deaths![act]}</span>}
+                  </td>
                   <td className={`split-time ${seg !== null && best[act] !== undefined && seg < best[act] ? 'gold' : ''}`}>
                     {seg !== null ? fmt(seg) : state === 'current' ? fmt(inAct) : pbSeg !== null ? fmt(pbSeg) : '—'}
                   </td>

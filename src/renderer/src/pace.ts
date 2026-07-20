@@ -6,6 +6,7 @@ export type Run = {
   splits: Record<number, number>
   total: number | null
   zones?: Record<number, number>
+  deaths?: Record<number, number> // act → death count; absent on runs stored before it existed
 }
 
 export const startRun = (now: number): Run => ({ start: now, splits: {}, total: null, zones: {} })
@@ -21,6 +22,14 @@ export function recordZoneEntry(run: Run, visitIdx: number, now: number): Run {
   if (run.zones?.[visitIdx] !== undefined || run.total !== null) return run
   return { ...run, zones: { ...run.zones, [visitIdx]: now - run.start } }
 }
+
+export function recordDeath(run: Run, act: number): Run {
+  if (run.total !== null) return run
+  return { ...run, deaths: { ...run.deaths, [act]: (run.deaths?.[act] ?? 0) + 1 } }
+}
+
+export const totalDeaths = (r: Run): number =>
+  Object.values(r.deaths ?? {}).reduce((a, b) => a + b, 0)
 
 export function finishRun(run: Run, now: number): Run {
   return run.total !== null ? run : { ...run, total: now - run.start }

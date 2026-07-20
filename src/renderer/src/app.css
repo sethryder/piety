@@ -479,6 +479,11 @@ body {
   color: var(--negative);
 }
 
+.split-deaths {
+  color: var(--negative);
+  font-weight: 400;
+}
+
 .splits {
   border-collapse: collapse;
   font-family: var(--font-mono);

@@ -6,7 +6,7 @@ import { buildRoute } from './routeData'
 import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
 import { levelingSet } from '../../shared/pob'
-import { actSegment, actStart, finishRun, fmt, lastCrossing, pbOf, rebaseStart, recordActEntry, recordZoneEntry, startRun, worthStashing, type Run } from './pace'
+import { actSegment, actStart, finishRun, fmt, lastCrossing, pbOf, rebaseStart, recordActEntry, recordDeath, recordZoneEntry, startRun, worthStashing, type Run } from './pace'
 import { BandView, DenseView, FocusView, LevelChip, MixedView, PaceView, SplitView, type ViewProps } from './views'
 import { Wizard, type WizardResult } from './wizard'
 import { claimProfile, lastChar, loadProfile, saveProfile } from './profiles'
@@ -219,6 +219,13 @@ export default function App() {
           jumpTo(prof.idx)
         }
         setChar({ name: e.name, level: e.level })
+      } else if (e.type === 'slain') {
+        // only our character's deaths count; the line also fires for party members
+        const r = runRef.current
+        if (r && r.total === null && e.name === charRef.current) {
+          runRef.current = recordDeath(r, lastCrossing(r))
+          setRun(save('pace-run', runRef.current))
+        }
       } else if (e.type === 'gen' || e.type === 'enter') {
         // 'gen' (area id, language-independent, new instances only) is the primary
         // signal; 'enter' (localized name, every entry) is the fallback and a no-op

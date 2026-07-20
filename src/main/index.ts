@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { autoUpdater } from 'electron-updater'
+import { exec } from 'node:child_process'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { findClientTxt, tailLog } from './logtail'
@@ -43,6 +44,33 @@ function startTail(path: string | null): void {
   if (currentLogPath) stopTail = tailLog(currentLogPath, (e) => broadcast('log-event', e))
   broadcast('log-status', currentLogPath)
 }
+
+// Game liveness: OS process listing only — no game memory, no injection, no
+// input. Covers PathOfExile.exe / _x64 / Steam / _KG, same names under Proton.
+const WSL_TASKLIST = '/mnt/c/Windows/System32/tasklist.exe'
+const POE_CMD =
+  process.platform === 'win32'
+    ? 'tasklist /FI "IMAGENAME eq PathOfExile*" /NH'
+    : existsSync(WSL_TASKLIST) // WSL: the game runs on the Windows host
+      ? `${WSL_TASKLIST} /FI "IMAGENAME eq PathOfExile*" /NH`
+      : 'pgrep -fa PathOfExile'
+
+let poeRunning = true // optimistic until the first poll: pausing needs positive absence
+function pollPoe(): void {
+  exec(POE_CMD, (err, stdout) => {
+    // pgrep exits 1 on no-match, tasklist prints an INFO line; anything else
+    // (missing binary, locked-down shell) fails safe as "running" — a broken
+    // check must never pause someone's timer
+    const running =
+      err && err.code !== 1 ? true : /pathofexile/i.test(stdout)
+    if (running !== poeRunning) {
+      poeRunning = running
+      broadcast('poe-status', running)
+    }
+  })
+}
+setInterval(pollPoe, 15_000)
+pollPoe()
 
 ipcMain.handle('pob-import', async (_e, input: string) => {
   let code = input.trim()
@@ -94,7 +122,8 @@ ipcMain.handle('init-state', () => ({
   logPath: currentLogPath,
   idx: lastIdx,
   version: app.getVersion(),
-  allowPrerelease: !!loadConfig().allowPrerelease
+  allowPrerelease: !!loadConfig().allowPrerelease,
+  poeRunning
 }))
 
 ipcMain.on('set-prerelease', (_e, v: boolean) => {

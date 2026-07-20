@@ -32,6 +32,7 @@ export type ViewProps = {
   pb: Run | null
   history: Run[]
   now: number
+  paused: boolean
   resetRun: () => void
   treeInfo: TreeInfo | null
 }
@@ -272,7 +273,7 @@ function RunHistory({ history, pb }: { history: Run[]; pb: Run | null }) {
   )
 }
 
-export function PaceView({ run, pb, history, now, visits, resetRun }: Pick<ViewProps, 'run' | 'pb' | 'history' | 'now' | 'visits' | 'resetRun'>) {
+export function PaceView({ run, pb, history, now, paused, visits, resetRun }: Pick<ViewProps, 'run' | 'pb' | 'history' | 'now' | 'paused' | 'visits' | 'resetRun'>) {
   const [openAct, setOpenAct] = useState<number | null>(null)
   if (!run)
     return (
@@ -295,7 +296,7 @@ export function PaceView({ run, pb, history, now, visits, resetRun }: Pick<ViewP
     <div className="pace">
       <div className="pace-cards">
         <div className="pace-card">
-          <span className="micro-label">RUN TIME</span>
+          <span className="micro-label">RUN TIME{paused && ' · PAUSED'}</span>
           <span className="pace-clock">{fmt(elapsed)}</span>
           {delta !== null && (
             <span className={`pace-delta ${delta <= 0 ? 'ahead' : 'behind'}`}>
@@ -410,7 +411,15 @@ export function DenseView(p: ViewProps) {
           ))}
         {p.tab === 'CLIENT.LOG' && <LogPanel logLines={p.logLines} />}
         {p.tab === 'PACE' && (
-          <PaceView run={p.run} pb={p.pb} history={p.history} now={p.now} visits={p.visits} resetRun={p.resetRun} />
+          <PaceView
+            run={p.run}
+            pb={p.pb}
+            history={p.history}
+            now={p.now}
+            paused={p.paused}
+            visits={p.visits}
+            resetRun={p.resetRun}
+          />
         )}
       </div>
     </div>

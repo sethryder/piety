@@ -20,7 +20,9 @@ contextBridge.exposeInMainWorld('api', {
     idx: number
     version: string
     allowPrerelease: boolean
+    poeRunning: boolean
   }> => ipcRenderer.invoke('init-state'),
+  onPoeStatus: (cb: (running: boolean) => void) => on('poe-status', cb),
   setPrerelease: (v: boolean) => ipcRenderer.send('set-prerelease', v),
   checkUpdates: (): Promise<{ current: string; latest: string | null } | null> =>
     ipcRenderer.invoke('check-updates'),

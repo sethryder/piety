@@ -19,7 +19,9 @@ interface Window {
       idx: number
       version: string
       allowPrerelease: boolean
+      poeRunning: boolean
     }>
+    onPoeStatus: (cb: (running: boolean) => void) => () => void
     setPrerelease: (v: boolean) => void
     checkUpdates: () => Promise<{ current: string; latest: string | null } | null>
     onLog: (cb: (e: LogEvent) => void) => () => void

@@ -67,7 +67,9 @@ export default function App() {
       setLogPath(s.logPath)
       setAppVersion(s.version)
       setBeta(s.allowPrerelease)
+      onPoeStatus(s.poeRunning, Date.now())
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // keep the mini overlay window on the same route position
@@ -107,6 +109,35 @@ export default function App() {
   const idxRef = useRef(idx)
   const runRef = useRef(run)
 
+  // Auto-pause: while the game is closed the clock freezes at pausedSince, and
+  // on resume the run's start shifts forward by the gap, so every split
+  // computed from (now - start) stays correct with no model change.
+  // ponytail: the gap while the app itself is closed isn't credited as pause;
+  // persist pausedSince in the run if that matters
+  const [pausedSince, setPausedSinceState] = useState<number | null>(null)
+  const pausedRef = useRef<number | null>(null)
+  function setPausedSince(v: number | null) {
+    pausedRef.current = v
+    setPausedSinceState(v)
+  }
+
+  function onPoeStatus(running: boolean, nowMs: number) {
+    if (!running) {
+      if (pausedRef.current === null && runRef.current && runRef.current.total === null)
+        setPausedSince(nowMs)
+    } else if (pausedRef.current !== null) {
+      const r = runRef.current
+      if (r && r.total === null) {
+        const shifted = { ...r, start: r.start + (nowMs - pausedRef.current) }
+        runRef.current = shifted
+        setRun(save('pace-run', shifted))
+      }
+      setPausedSince(null)
+    }
+  }
+
+  useEffect(() => window.api.onPoeStatus((v) => onPoeStatus(v, Date.now())), [])
+
   // manual zone jumps must update the ref too, or the next log event advances
   // from a stale position
   function jumpTo(i: number) {
@@ -126,6 +157,8 @@ export default function App() {
   useEffect(() => {
     const offStatus = window.api.onLogStatus(setLogPath)
     const offLog = window.api.onLog((e) => {
+      // any live log line proves the game is up — resume before the next poll
+      onPoeStatus(true, Date.now())
       if (e.type === 'line') {
         setLogLines((l) => [...l.slice(-99), e.line])
       } else if (e.type === 'level') {
@@ -283,7 +316,9 @@ export default function App() {
     setWizardOpen(false)
   }
 
-  const elapsed = run ? (run.total ?? now - run.start) : null
+  // while paused the clock reads as of pausedSince; start is rebased on resume
+  const clockNow = pausedSince ?? now
+  const elapsed = run ? (run.total ?? clockNow - run.start) : null
   const cross = run ? lastCrossing(run) : 1
   // footer chip: finished runs show the final total, live runs show time-in-act
   const chipTime = run && elapsed !== null ? (run.total ?? elapsed - (actStart(run, cross) ?? 0)) : null
@@ -316,7 +351,8 @@ export default function App() {
     run,
     pb,
     history,
-    now,
+    now: clockNow,
+    paused: pausedSince !== null,
     resetRun,
     treeInfo
   }
@@ -432,7 +468,15 @@ export default function App() {
                 CLOSE
               </button>
             </div>
-            <PaceView run={run} pb={pb} history={history} now={now} visits={visits} resetRun={resetRun} />
+            <PaceView
+              run={run}
+              pb={pb}
+              history={history}
+              now={clockNow}
+              paused={pausedSince !== null}
+              visits={visits}
+              resetRun={resetRun}
+            />
           </div>
         ) : band ? (
           <BandView {...viewProps} />
@@ -476,11 +520,18 @@ export default function App() {
               className="gem-dot"
               style={{
                 background:
-                  paceDelta === null ? '#8a93a2' : paceDelta <= 0 ? '#7fc98f' : '#e08b7d'
+                  pausedSince !== null
+                    ? '#8a93a2'
+                    : paceDelta === null
+                      ? '#8a93a2'
+                      : paceDelta <= 0
+                        ? '#7fc98f'
+                        : '#e08b7d'
               }}
             />
             A{cross} · {fmt(chipTime)}
             {paceDelta !== null && ` · ${fmt(paceDelta, true)}`}
+            {pausedSince !== null && ' · PAUSED'}
           </button>
         )}
       </footer>

@@ -145,11 +145,18 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
   return visits
 }
 
-// Next matching visit for a zone-enter: stay if already there, else scan
-// forward; scan from the top as manual-backtrack recovery.
-export function advance(visits: ZoneVisit[], cur: number, zone: string): number {
-  if (visits[cur]?.zone === zone) return cur
-  for (let i = cur + 1; i < visits.length; i++) if (visits[i].zone === zone) return i
-  for (let i = 0; i < cur; i++) if (visits[i].zone === zone) return i
+// Next matching visit: stay if already there, else scan forward; scan from
+// the top as manual-backtrack recovery.
+function scan(visits: ZoneVisit[], cur: number, match: (v: ZoneVisit) => boolean): number {
+  if (visits[cur] && match(visits[cur])) return cur
+  for (let i = cur + 1; i < visits.length; i++) if (match(visits[i])) return i
+  for (let i = 0; i < cur; i++) if (match(visits[i])) return i
   return cur
 }
+
+export const advance = (visits: ZoneVisit[], cur: number, zone: string): number =>
+  scan(visits, cur, (v) => v.zone === zone)
+
+// Primary tracking: area ids from "Generating level" log lines, language-independent.
+export const advanceById = (visits: ZoneVisit[], cur: number, areaId: string): number =>
+  scan(visits, cur, (v) => v.areaId === areaId)

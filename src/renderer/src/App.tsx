@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { banditFlags, type PobBuild } from '../../shared/pob'
 import { activeSpecIdx, autoAssign, treeDelta } from '../../shared/trees'
-import { advance } from './route'
+import { advance, advanceById } from './route'
 import { buildRoute } from './routeData'
 import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
@@ -97,16 +97,22 @@ export default function App() {
         setLogLines((l) => [...l.slice(-99), e.line])
       } else if (e.type === 'level') {
         setChar({ name: e.name, level: e.level })
-      } else if (e.type === 'enter') {
+      } else if (e.type === 'gen' || e.type === 'enter') {
+        // 'gen' (area id, language-independent, new instances only) is the primary
+        // signal; 'enter' (localized name, every entry) is the fallback and a no-op
+        // when 'gen' already moved us
+        const ni =
+          e.type === 'gen'
+            ? advanceById(visits, idxRef.current, e.areaId)
+            : advance(visits, idxRef.current, e.zone)
         const nowMs = Date.now()
-        const ni = advance(visits, idxRef.current, e.zone)
         idxRef.current = ni
         setIdx(ni)
 
         let r = runRef.current
-        // only a brand-new character can enter the Twilight Strand: always a fresh run
-        // (a logout+login inside the Strand also restarts the clock — acceptable)
-        if (e.zone === visits[0].zone) r = startRun(nowMs)
+        // only a brand-new character reaches the Twilight Strand: always a fresh run
+        const atStart = e.type === 'gen' ? e.areaId === visits[0].areaId : e.zone === visits[0].zone
+        if (atStart) r = startRun(nowMs)
         if (r) {
           r = recordActEntry(r, visits[ni].act, nowMs)
           if (ni === visits.length - 1 && r.total === null) {

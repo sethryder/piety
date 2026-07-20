@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { parseRoute, advance } from '../src/renderer/src/route.ts'
+import { parseRoute, advance, advanceById } from '../src/renderer/src/route.ts'
 
 const SAMPLE = `#section Act 1
 Find and kill {kill|Hillock}
@@ -61,6 +61,15 @@ test('advance: stay, forward, backtrack', () => {
   assert.equal(advance(v, 2, "Lioneye's Watch"), 3)
   assert.equal(advance(v, 5, 'The Twilight Strand'), 0)
   assert.equal(advance(v, 2, 'Unknown Zone'), 2)
+})
+
+test('advanceById tracks by area id', () => {
+  const v = parseRoute([SAMPLE], new Set(['LEAGUE_START']))
+  assert.equal(advanceById(v, 0, '1_1_2'), 2)
+  assert.equal(advanceById(v, 2, '1_1_2'), 2) // already there
+  assert.equal(advanceById(v, 2, '1_1_town'), 3)
+  assert.equal(advanceById(v, 5, '1_1_1'), 0) // new character: back to the start
+  assert.equal(advanceById(v, 2, 'some_hideout'), 2) // unknown area: stay put
 })
 
 test('real route files parse clean', () => {

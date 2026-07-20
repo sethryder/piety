@@ -2,13 +2,17 @@ import { closeSync, existsSync, openSync, readFileSync, readSync, statSync } fro
 
 export type LogEvent =
   | { type: 'line'; line: string }
-  | { type: 'enter'; zone: string }
+  | { type: 'enter'; zone: string } // localized name, fires on every entry
+  | { type: 'gen'; areaId: string; areaLevel: number; seed: number } // new instances only, language-independent
   | { type: 'level'; name: string; cls: string; level: number }
 
+const GEN_RE = /\] Generating level (\d+) area "([^"]+)" with seed (\d+)/
 const ENTER_RE = /\] : You have entered (.+)\.$/
 const LEVEL_RE = /\] : (\S+) \((\w+)\) is now level (\d+)$/
 
 export function parseLine(line: string): LogEvent | null {
+  const gen = GEN_RE.exec(line)
+  if (gen) return { type: 'gen', areaId: gen[2], areaLevel: Number(gen[1]), seed: Number(gen[3]) }
   const enter = ENTER_RE.exec(line)
   if (enter) return { type: 'enter', zone: enter[1] }
   const level = LEVEL_RE.exec(line)

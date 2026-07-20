@@ -20,6 +20,10 @@ test('parseLine', () => {
     level: 12
   })
   assert.equal(parseLine(`${STAMP} : Some chat message.`), null)
+  assert.deepEqual(
+    parseLine('2026/07/19 12:00:01 123 abc [DEBUG Client 1] Generating level 12 area "1_1_11_1" with seed 469718509'),
+    { type: 'gen', areaId: '1_1_11_1', areaLevel: 12, seed: 469718509 }
+  )
 })
 
 test('tailLog emits only new lines, holds partial writes', async () => {

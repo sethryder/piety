@@ -3,6 +3,7 @@
 type LogEvent =
   | { type: 'line'; line: string }
   | { type: 'enter'; zone: string }
+  | { type: 'gen'; areaId: string; areaLevel: number; seed: number }
   | { type: 'level'; name: string; cls: string; level: number }
 
 interface Window {

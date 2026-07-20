@@ -4,8 +4,35 @@ import { levelingSet } from '../../shared/pob'
 import type { GemPlanEntry } from './gemPlan'
 import { actSegment, actStart, bestSegments, fmt, lastCrossing, type Run } from './pace'
 import type { Step, ZoneVisit } from './route'
+import { levelStatus } from '../../shared/xp'
 import { TreeView } from './TreeView'
 import { ZoneLayout } from './ZoneLayout'
+
+// Zone level vs character level; hidden in towns (no monsters, no penalty)
+export function LevelChip({
+  charLv,
+  areaLv,
+  town
+}: {
+  charLv: number | null
+  areaLv: number | null
+  town: boolean
+}) {
+  if (charLv === null || areaLv === null || town) return null
+  const status = levelStatus(charLv, areaLv)
+  const delta = areaLv - charLv
+  const title =
+    status === 'over'
+      ? 'Overleveled for this zone — XP penalty'
+      : status === 'under'
+        ? 'Zone above your level — dangerous, XP penalty'
+        : 'Zone level vs your level'
+  return (
+    <span className={`act-chip lvl-chip ${status}`} title={title}>
+      ZL {areaLv} · {delta >= 0 ? `+${delta}` : delta}
+    </span>
+  )
+}
 
 export type TreeInfo = {
   allocated: Set<string>

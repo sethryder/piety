@@ -6,9 +6,10 @@ import { buildRoute } from './routeData'
 import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
 import { levelingSet } from '../../shared/pob'
-import { actSegment, actStart, finishRun, fmt, lastCrossing, pbOf, recordActEntry, recordZoneEntry, startRun, type Run } from './pace'
-import { BandView, DenseView, FocusView, MixedView, PaceView, SplitView, type ViewProps } from './views'
+import { actSegment, actStart, finishRun, fmt, lastCrossing, pbOf, rebaseStart, recordActEntry, recordZoneEntry, startRun, worthStashing, type Run } from './pace'
+import { BandView, DenseView, FocusView, LevelChip, MixedView, PaceView, SplitView, type ViewProps } from './views'
 import { Wizard, type WizardResult } from './wizard'
+import { claimProfile, lastChar, loadProfile, saveProfile } from './profiles'
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -27,15 +28,16 @@ type View = 'FOCUS' | 'MIXED' | 'DENSE' | 'SPLIT'
 
 export default function App() {
   const [build, setBuild] = useState<PobBuild | null>(() => load('pob-build', null))
-  // ponytail: owned gems are global, not per-character; profiles fix that later
-  const [owned, setOwned] = useState<Record<string, boolean>>(() => load('owned-gems', {}))
+  // owned gems + route position live in per-character profiles (see profiles.ts)
+  const [owned, setOwned] = useState<Record<string, boolean>>(() => loadProfile().owned)
   const [ui, setUiState] = useState<{ view: View; mirror?: boolean }>(() =>
     load('ui', { view: 'SPLIT' as View, mirror: false })
   )
   // short window (e.g. FancyZones band on a portrait monitor) forces the compact band layout
   const [shortWindow, setShortWindow] = useState(() => window.innerHeight < 520)
-  const [idx, setIdx] = useState(0)
+  const [idx, setIdx] = useState(() => loadProfile().idx)
   const [char, setChar] = useState<{ name: string; level: number } | null>(null)
+  const [areaLevel, setAreaLevel] = useState<number | null>(null)
   const [logLines, setLogLines] = useState<string[]>([])
   const [logPath, setLogPath] = useState<string | null>(null)
   const [tab, setTab] = useState('GEMS')
@@ -59,6 +61,17 @@ export default function App() {
   const [updateMsg, setUpdateMsg] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
   const [pobSource, setPobSource] = useState<string | null>(() => load('pob-source', null))
+  const [accent, setAccent] = useState<string>(() => load('accent', '#d7a94e'))
+  const [autoView, setAutoView] = useState<boolean>(() => load('auto-view', false))
+  // auto view: FOCUS while in the wilderness, the user's chosen view in town.
+  // Transient — a manual view click overrides until the next zone change.
+  const [autoFocus, setAutoFocus] = useState(false)
+
+  function pickAccent(c: string) {
+    setAccent(save('accent', c))
+    // storage events only fire in other windows; apply here directly
+    document.documentElement.style.setProperty('--accent', c)
+  }
 
   useEffect(() => window.api.onUpdateReady(setUpdateVersion), [])
 
@@ -117,6 +130,12 @@ export default function App() {
   // refs so a burst of log events in one poll tick sees its own updates
   const idxRef = useRef(idx)
   const runRef = useRef(run)
+  const charRef = useRef(lastChar())
+
+  // persist the active profile on every change; char switches redirect charRef first
+  useEffect(() => {
+    saveProfile(charRef.current, { owned, idx })
+  }, [owned, idx])
 
   // Auto-pause: while the game is closed the clock freezes at pausedSince, and
   // on resume the run's start shifts forward by the gap, so every split
@@ -137,7 +156,7 @@ export default function App() {
     } else if (pausedRef.current !== null) {
       const r = runRef.current
       if (r && r.total === null) {
-        const shifted = { ...r, start: r.start + (nowMs - pausedRef.current) }
+        const shifted = rebaseStart(r, pausedRef.current, nowMs)
         runRef.current = shifted
         setRun(save('pace-run', shifted))
       }
@@ -171,11 +190,18 @@ export default function App() {
       if (e.type === 'line') {
         setLogLines((l) => [...l.slice(-99), e.line])
       } else if (e.type === 'level') {
+        if (e.name !== charRef.current) {
+          const prof = claimProfile(e.name, idxRef.current)
+          charRef.current = e.name
+          setOwned(prof.owned)
+          jumpTo(prof.idx)
+        }
         setChar({ name: e.name, level: e.level })
       } else if (e.type === 'gen' || e.type === 'enter') {
         // 'gen' (area id, language-independent, new instances only) is the primary
         // signal; 'enter' (localized name, every entry) is the fallback and a no-op
         // when 'gen' already moved us
+        if (e.type === 'gen') setAreaLevel(e.areaLevel)
         const ni =
           e.type === 'gen'
             ? advanceById(visits, idxRef.current, e.areaId)
@@ -192,6 +218,13 @@ export default function App() {
         if (atStart) {
           stashPartial(r)
           r = startRun(nowMs)
+          // a fresh Twilight Strand = new character: park progress under the
+          // pending '' profile until the first level-up line names them
+          if (charRef.current !== '') {
+            charRef.current = save('last-char', '')
+            setOwned({})
+            setChar(null)
+          }
         }
         if (r) {
           r = recordActEntry(r, visits[ni].act, nowMs)
@@ -223,6 +256,10 @@ export default function App() {
   }, [run])
 
   const cur = visits[Math.min(idx, visits.length - 1)]
+
+  useEffect(() => {
+    setAutoFocus(autoView && !cur.areaId.endsWith('_town'))
+  }, [autoView, cur])
   const due = plan.filter((g) => !g.granted && g.visitIdx <= idx && !owned[g.gemId])
   const pb = useMemo(() => pbOf(history), [history])
 
@@ -280,12 +317,12 @@ export default function App() {
   }, [build, assign, treeIdx])
 
   function toggleOwned(gemId: string) {
-    setOwned((o) => save('owned-gems', { ...o, [gemId]: !o[gemId] }))
+    setOwned((o) => ({ ...o, [gemId]: !o[gemId] }))
   }
 
   // keep partial runs (act 2+ reached): their segments feed best-act comparisons
   function stashPartial(r: Run | null) {
-    if (r && r.total === null && Object.keys(r.splits).length) {
+    if (worthStashing(r)) {
       setHistory((h) => save('pace-history', [...h, r]))
     }
   }
@@ -367,6 +404,7 @@ export default function App() {
   }
   const band = shortWindow
   const tailing = logPath !== null
+  const view: View = autoFocus ? 'FOCUS' : ui.view
 
   return (
     <>
@@ -376,6 +414,11 @@ export default function App() {
           {char ? `${char.name} · Lv ${char.level}` : 'No character'}
         </span>
         <span className="act-chip">ACT {cur.act}</span>
+        <LevelChip
+          charLv={char?.level ?? null}
+          areaLv={areaLevel}
+          town={cur.areaId.endsWith('_town')}
+        />
         {run && runNo > 0 && <span className="act-chip">RUN {runNo}</span>}
         <span className="step-btns">
           <button
@@ -400,13 +443,16 @@ export default function App() {
           {(['FOCUS', 'MIXED', 'DENSE', 'SPLIT'] as const).map((v) => (
             <button
               key={v}
-              className={ui.view === v ? 'active' : ''}
-              onClick={() => setUi({ ...ui, view: v })}
+              className={view === v ? 'active' : ''}
+              onClick={() => {
+                setAutoFocus(false)
+                setUi({ ...ui, view: v })
+              }}
             >
               {v}
             </button>
           ))}
-          {ui.view === 'SPLIT' && !band && (
+          {view === 'SPLIT' && !band && (
             <button
               className={ui.mirror ? 'active' : ''}
               title="Mirror layout (zone guide on the right)"
@@ -455,6 +501,37 @@ export default function App() {
                 CLOSE
               </button>
             </div>
+            <section className="settings-section">
+              <span className="micro-label">ACCENT</span>
+              <div className="accent-row">
+                {['#d7a94e', '#7aa7d9', '#8fbf7a', '#c39ad9'].map((c) => (
+                  <button
+                    key={c}
+                    className={`accent-swatch ${accent === c ? 'active' : ''}`}
+                    style={{ background: c }}
+                    title={c}
+                    onClick={() => pickAccent(c)}
+                  />
+                ))}
+                <input
+                  type="color"
+                  value={accent}
+                  title="Custom color"
+                  onChange={(e) => pickAccent(e.target.value)}
+                />
+              </div>
+            </section>
+            <section className="settings-section">
+              <span className="micro-label">VIEW</span>
+              <label className="settings-row">
+                <input
+                  type="checkbox"
+                  checked={autoView}
+                  onChange={(e) => setAutoView(save('auto-view', e.target.checked))}
+                />
+                Auto view — FOCUS in the wilderness, your chosen view in town
+              </label>
+            </section>
             <section className="settings-section">
               <span className="micro-label">UPDATES</span>
               <label className="settings-row">
@@ -507,11 +584,11 @@ export default function App() {
           </div>
         ) : band ? (
           <BandView {...viewProps} />
-        ) : ui.view === 'FOCUS' ? (
+        ) : view === 'FOCUS' ? (
           <FocusView {...viewProps} />
-        ) : ui.view === 'DENSE' ? (
+        ) : view === 'DENSE' ? (
           <DenseView {...viewProps} />
-        ) : ui.view === 'SPLIT' ? (
+        ) : view === 'SPLIT' ? (
           <SplitView {...viewProps} mirror={!!ui.mirror} />
         ) : (
           <MixedView {...viewProps} />

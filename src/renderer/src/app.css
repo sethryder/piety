@@ -25,6 +25,7 @@
   --text-secondary: #8a93a2;
   --text-faint: #3a4250;
   --accent: #d7a94e;
+  --accent-hover: color-mix(in srgb, var(--accent) 78%, #fff);
   --positive: #7fc98f;
   --negative: #e08b7d;
   --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
@@ -596,6 +597,35 @@ button.pace-chip:hover {
 
 .settings a {
   color: var(--accent);
+}
+
+.accent-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.accent-swatch {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.accent-swatch.active {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 1px;
+}
+
+.accent-row input[type='color'] {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
 }
 
 .update-chip {
@@ -1556,6 +1586,18 @@ button.pace-chip:hover {
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--accent);
+}
+
+.lvl-chip {
+  color: var(--text-secondary);
+}
+
+.lvl-chip.over {
+  color: #d7a94e;
+}
+
+.lvl-chip.under {
+  color: var(--negative);
 }
 
 .tail-dot.dead {

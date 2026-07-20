@@ -4,8 +4,9 @@ import { buildRoute } from './routeData'
 import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
 import { fmt, type Run } from './pace'
-import { StepLine } from './views'
+import { LevelChip, StepLine } from './views'
 import { ZoneLayout } from './ZoneLayout'
+import { loadProfile } from './profiles'
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -19,7 +20,7 @@ function load<T>(key: string, fallback: T): T {
 // window) plus log/idx events relayed by the main process.
 export default function MiniApp() {
   const [build, setBuild] = useState<PobBuild | null>(() => load('pob-build', null))
-  const [owned, setOwned] = useState<Record<string, boolean>>(() => load('owned-gems', {}))
+  const [owned, setOwned] = useState<Record<string, boolean>>(() => loadProfile().owned)
   const [leagueStart, setLeagueStart] = useState<boolean>(() => load('league-start', true))
   const [banditOverride, setBanditOverride] = useState<string | null>(() =>
     load('bandit-override', null)
@@ -27,6 +28,7 @@ export default function MiniApp() {
   const [run, setRun] = useState<Run | null>(() => load('pace-run', null))
   const [idx, setIdx] = useState(0)
   const [char, setChar] = useState<{ name: string; level: number } | null>(null)
+  const [areaLevel, setAreaLevel] = useState<number | null>(null)
   const [locked, setLocked] = useState<boolean>(() => load('mini-locked', false))
   const [showMap, setShowMap] = useState<boolean>(() => load('mini-map', true))
   const [now, setNow] = useState(() => Date.now())
@@ -35,7 +37,7 @@ export default function MiniApp() {
   useEffect(() => {
     const refresh = () => {
       setBuild(load('pob-build', null))
-      setOwned(load('owned-gems', {}))
+      setOwned(loadProfile().owned)
       setLeagueStart(load('league-start', true))
       setBanditOverride(load('bandit-override', null))
       setRun(load('pace-run', null))
@@ -49,6 +51,7 @@ export default function MiniApp() {
     const offIdx = window.api.onIdxSync(setIdx)
     const offLog = window.api.onLog((e) => {
       if (e.type === 'level') setChar({ name: e.name, level: e.level })
+      if (e.type === 'gen') setAreaLevel(e.areaLevel)
     })
     return () => {
       offIdx()
@@ -102,6 +105,11 @@ export default function MiniApp() {
     <div className="mini">
       <div className={`mini-bar ${locked ? '' : 'drag'}`}>
         <span className="act-chip">A{cur.act}</span>
+        <LevelChip
+          charLv={char?.level ?? null}
+          areaLv={areaLevel}
+          town={cur.areaId.endsWith('_town')}
+        />
         <span className="mini-char">
           {char ? `${char.name} · ${char.level}` : locked ? '' : 'drag me'}
         </span>

@@ -2,7 +2,7 @@
 // Route data vendored from https://github.com/HeartofPhos/exile-leveling (MIT).
 
 export type Step = { text: string; tags: string[]; hints: string[]; quests?: string[] }
-export type ZoneVisit = { zone: string; act: number; steps: Step[] }
+export type ZoneVisit = { zone: string; act: number; steps: Step[]; areaId: string }
 
 const FRAG_RE = /\{([a-z_]+)(?:\|([^}]*))?\}/g
 // ponytail: assumes {dir|deg} is 0°=north clockwise; fix mapping if arrows look wrong in-game
@@ -20,10 +20,12 @@ function renderHint(text: string): string {
 
 export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
   const visits: ZoneVisit[] = []
-  let cur: ZoneVisit = { zone: 'The Twilight Strand', act: 1, steps: [] }
+  let cur: ZoneVisit = { zone: 'The Twilight Strand', act: 1, steps: [], areaId: '1_1_1' }
   let lastStep: Step | null = null
   let lastTown = "Lioneye's Watch"
+  let lastTownId = '1_1_town'
   let portalZone = ''
+  let portalZoneId = ''
 
   files.forEach((file, fi) => {
     const act = fi + 1
@@ -94,12 +96,18 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
               return `Ascend (${arg})`
             case 'portal':
               tags.push('PORT')
-              if (arg === 'set') portalZone = cur.zone
-              else if (portalZone) move = portalZone
+              if (arg === 'set') {
+                portalZone = cur.zone
+                portalZoneId = cur.areaId
+              } else if (portalZone) {
+                move = portalZone
+                moveId = portalZoneId
+              }
               return 'portal'
             case 'logout':
               tags.push('LOG')
               move = lastTown
+              moveId = lastTownId
               return 'Logout'
             case 'arena':
               tags.push('GO')
@@ -124,8 +132,11 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
 
       if (move) {
         visits.push(cur)
-        if (moveId.endsWith('_town')) lastTown = move
-        cur = { zone: move, act, steps: [] }
+        if (moveId.endsWith('_town')) {
+          lastTown = move
+          lastTownId = moveId
+        }
+        cur = { zone: move, act, steps: [], areaId: moveId }
       }
     }
   })

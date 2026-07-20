@@ -35,6 +35,14 @@ test('parseRoute groups steps into zone visits', () => {
       'The Mud Flats'
     ]
   )
+  assert.deepEqual(v.map((x) => x.areaId), [
+    '1_1_1',
+    '1_1_town',
+    '1_1_2',
+    '1_1_town', // logout
+    '1_1_2', // portal back to where it was set
+    '1_1_3'
+  ])
   assert.deepEqual(v[0].steps.map((s) => s.text), ['Find and kill Hillock', "➞ Lioneye's Watch"])
   assert.deepEqual(v[0].steps[0].tags, ['KILL'])
   assert.deepEqual(v[1].steps.map((s) => s.text), ['Get waypoint', '➞ The Coast'])

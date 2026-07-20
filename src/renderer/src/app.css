@@ -516,6 +516,38 @@ body {
   padding: 0;
 }
 
+/* ---- zone layout images ---- */
+.zone-layout {
+  position: relative;
+  cursor: pointer;
+  align-self: flex-start;
+  margin: 6px 0;
+}
+
+.zone-layout img {
+  display: block;
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: 8px;
+  background: #0a0c0f;
+}
+
+.mini .zone-layout img {
+  max-height: 150px;
+}
+
+.zone-layout-count {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-primary);
+  background: rgba(11, 13, 16, 0.75);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
 /* ---- SPLIT view ---- */
 .split {
   display: grid;

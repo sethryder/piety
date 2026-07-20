@@ -5,6 +5,7 @@ import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
 import { fmt, type Run } from './pace'
 import { StepLine } from './views'
+import { ZoneLayout } from './ZoneLayout'
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -104,6 +105,7 @@ export default function MiniApp() {
       </div>
       <div className="mini-body">
         <h2 className="mini-zone">{cur.zone}</h2>
+        <ZoneLayout areaId={cur.areaId} />
         <ul className="steps mini-steps">
           {cur.steps.map((s, i) => (
             <StepLine key={i} s={s} />

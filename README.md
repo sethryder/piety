@@ -41,6 +41,7 @@ Game data is vendored, so the app works fully offline. `npm run update-data` ref
 ## Data sources and thanks
 
 - Route and gem/quest data from [HeartofPhos/exile-leveling](https://github.com/HeartofPhos/exile-leveling) (MIT)
+- Zone layout images from [Lailloken/Exile-UI](https://github.com/Lailloken/Exile-UI) (MIT)
 - Passive tree data from [grindinggear/skilltree-export](https://github.com/grindinggear/skilltree-export)
 - Build parsing for [Path of Building Community](https://github.com/PathOfBuildingCommunity/PathOfBuilding) exports
 

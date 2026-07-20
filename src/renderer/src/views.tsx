@@ -5,6 +5,7 @@ import type { GemPlanEntry } from './gemPlan'
 import { actEnd, fmt, lastCrossing, type Run } from './pace'
 import type { Step, ZoneVisit } from './route'
 import { TreeView } from './TreeView'
+import { ZoneLayout } from './ZoneLayout'
 
 export type TreeInfo = {
   allocated: Set<string>
@@ -151,6 +152,7 @@ export function MixedView(p: ViewProps) {
       <section className="zone-card">
         <span className="micro-label">NOW IN</span>
         <h1>{p.cur.zone}</h1>
+        <ZoneLayout areaId={p.cur.areaId} />
         <ul className="steps">
           {p.cur.steps.map((s, i) => (
             <StepLine key={i} s={s} />

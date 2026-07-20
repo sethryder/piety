@@ -1394,6 +1394,26 @@ button.pace-chip:hover {
   border-color: var(--accent);
 }
 
+.step-btns {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 6px;
+}
+
+.step-btns .import-btn {
+  padding: 4px 7px;
+}
+
+.import-btn:disabled,
+.mini-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.import-btn:disabled:hover {
+  border-color: var(--border-card);
+}
+
 .cog-btn {
   display: inline-flex;
   align-items: center;

@@ -82,6 +82,12 @@ export default function MiniApp() {
   const next = visits[idx + 1]
   const elapsed = run ? (run.total ?? now - run.start) : null
 
+  function step(d: number) {
+    const ni = Math.min(Math.max(idx + d, 0), visits.length - 1)
+    setIdx(ni)
+    window.api.syncIdx(ni) // main relays it to the main window
+  }
+
   function toggleLock() {
     setLocked((l) => {
       localStorage.setItem('mini-locked', JSON.stringify(!l))
@@ -98,6 +104,17 @@ export default function MiniApp() {
         </span>
         <span className="spacer" />
         {elapsed !== null && <span className="footer-chip pace-chip">{fmt(elapsed)}</span>}
+        <button className="mini-btn" title="Step route back" disabled={idx === 0} onClick={() => step(-1)}>
+          ◀
+        </button>
+        <button
+          className="mini-btn"
+          title="Step route forward"
+          disabled={idx >= visits.length - 1}
+          onClick={() => step(1)}
+        >
+          ▶
+        </button>
         <button
           className={`mini-btn ${showMap ? '' : 'off'}`}
           title={showMap ? 'Hide zone layout' : 'Show zone layout'}

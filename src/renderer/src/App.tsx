@@ -74,6 +74,15 @@ export default function App() {
 
   // keep the mini overlay window on the same route position
   useEffect(() => window.api.syncIdx(idx), [idx])
+  // and accept steps made from the mini's arrows
+  useEffect(
+    () =>
+      window.api.onIdxSync((i) => {
+        idxRef.current = i
+        setIdx(i)
+      }),
+    []
+  )
 
   function setUi(next: { view: View; mirror?: boolean }) {
     setUiState(save('ui', next))
@@ -368,6 +377,24 @@ export default function App() {
         </span>
         <span className="act-chip">ACT {cur.act}</span>
         {run && runNo > 0 && <span className="act-chip">RUN {runNo}</span>}
+        <span className="step-btns">
+          <button
+            className="import-btn"
+            title="Step route back"
+            disabled={idx === 0}
+            onClick={() => jumpTo(idx - 1)}
+          >
+            ◀
+          </button>
+          <button
+            className="import-btn"
+            title="Step route forward"
+            disabled={idx >= visits.length - 1}
+            onClick={() => jumpTo(idx + 1)}
+          >
+            ▶
+          </button>
+        </span>
         <span className="spacer" />
         <div className={`view-toggle ${band ? 'dimmed' : ''}`}>
           {(['FOCUS', 'MIXED', 'DENSE', 'SPLIT'] as const).map((v) => (

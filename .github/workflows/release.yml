@@ -8,7 +8,15 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    # windows builds on windows: cross-building the NSIS installer on linux needs wine
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            args: --linux
+          - os: windows-latest
+            args: --win
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,10 +24,12 @@ jobs:
           node-version: 24
           cache: npm
       - name: Tag must match package.json version
+        shell: bash
         run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - run: npm run release
+      - run: npm run build
+      - run: npx electron-builder ${{ matrix.args }} --x64 --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -272,6 +272,8 @@ export default function App() {
 
   function finishWizard(r: WizardResult) {
     setSetupDone(save('setup-done', true))
+    // guide-only: SPLIT is mostly empty panels without a build, so drop to MIXED
+    if (r.build === null && ui.view === 'SPLIT') setUi({ ...ui, view: 'MIXED' })
     setBuild(save('pob-build', r.build))
     setTreeAssign(save('tree-assign', r.treeAssign))
     setLeagueStart(save('league-start', r.leagueStart))

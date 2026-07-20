@@ -28,6 +28,7 @@ export default function MiniApp() {
   const [idx, setIdx] = useState(0)
   const [char, setChar] = useState<{ name: string; level: number } | null>(null)
   const [locked, setLocked] = useState<boolean>(() => load('mini-locked', false))
+  const [showMap, setShowMap] = useState<boolean>(() => load('mini-map', true))
   const [now, setNow] = useState(() => Date.now())
 
   // other windows' localStorage writes fire storage events here
@@ -96,6 +97,18 @@ export default function MiniApp() {
         </span>
         <span className="spacer" />
         {elapsed !== null && <span className="footer-chip pace-chip">{fmt(elapsed)}</span>}
+        <button
+          className={`mini-btn ${showMap ? '' : 'off'}`}
+          title={showMap ? 'Hide zone layout' : 'Show zone layout'}
+          onClick={() =>
+            setShowMap((m) => {
+              localStorage.setItem('mini-map', JSON.stringify(!m))
+              return !m
+            })
+          }
+        >
+          🗺
+        </button>
         <button className="mini-btn" title={locked ? 'Unlock to move' : 'Lock position'} onClick={toggleLock}>
           {locked ? '🔒' : '🔓'}
         </button>
@@ -105,7 +118,6 @@ export default function MiniApp() {
       </div>
       <div className="mini-body">
         <h2 className="mini-zone">{cur.zone}</h2>
-        <ZoneLayout areaId={cur.areaId} />
         <ul className="steps mini-steps">
           {cur.steps.map((s, i) => (
             <StepLine key={i} s={s} />
@@ -121,6 +133,7 @@ export default function MiniApp() {
             ))}
           </div>
         )}
+        {showMap && <ZoneLayout areaId={cur.areaId} />}
         {next && (
           <div className="mini-next">
             <span className="micro-label">THEN</span> {next.zone}

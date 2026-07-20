@@ -748,6 +748,10 @@ body {
   color: var(--text-primary);
 }
 
+.mini-btn.off {
+  opacity: 0.35;
+}
+
 .mini-body {
   flex: 1;
   overflow-y: auto;

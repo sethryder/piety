@@ -1229,6 +1229,13 @@ body {
   margin-top: 2px;
 }
 
+.dir-arrow {
+  color: var(--accent);
+  font-size: 1.25em;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .up-next {
   display: flex;
   flex-direction: column;

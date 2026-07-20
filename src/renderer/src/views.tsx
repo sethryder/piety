@@ -35,6 +35,22 @@ export type ViewProps = {
   treeInfo: TreeInfo | null
 }
 
+// compass arrows from {dir|deg} route fragments get highlighted
+const DIR_ARROWS = /([↑↗→↘↓↙←↖])/
+function rich(text: string): React.ReactNode {
+  return text
+    .split(DIR_ARROWS)
+    .map((part, i) =>
+      DIR_ARROWS.test(part) ? (
+        <span key={i} className="dir-arrow">
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    )
+}
+
 export function StepLine({ s }: { s: Step }) {
   return (
     <li>
@@ -44,11 +60,11 @@ export function StepLine({ s }: { s: Step }) {
             {t}
           </span>
         ))}
-        <span>{s.text}</span>
+        <span>{rich(s.text)}</span>
       </div>
       {s.hints.map((h, j) => (
         <div key={j} className="hint">
-          ↳ {h}
+          ↳ {rich(h)}
         </div>
       ))}
     </li>

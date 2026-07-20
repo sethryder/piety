@@ -78,11 +78,12 @@ export function TreeView({
     if (drag.current) return
     const svg = svgRef.current
     const wrap = wrapRef.current
-    if (!svg || !wrap) return
-    const rect = svg.getBoundingClientRect()
-    const scale = box.w / rect.width // tree units per screen px
-    const mx = box.x + (e.clientX - rect.left) * scale
-    const my = box.y + (e.clientY - rect.top) * scale
+    // getScreenCTM includes the preserveAspectRatio letterboxing; a manual
+    // box.w/rect.width mapping does not, and snapped hover to far-off nodes
+    const ctm = svg?.getScreenCTM()
+    if (!svg || !wrap || !ctm) return
+    const scale = 1 / ctm.a // tree units per screen px
+    const { x: mx, y: my } = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse())
     let best: { node: TreeNode; d: number } | null = null
     for (const [id, n] of nodeList) {
       if (n.k === 'm' && !allocated.has(id) && !removedSet.has(id)) continue
@@ -94,9 +95,10 @@ export function TreeView({
       return
     }
     const wrapRect = wrap.getBoundingClientRect()
+    const sp = new DOMPoint(best.node.x, best.node.y).matrixTransform(ctm)
     setHover({
-      x: rect.left - wrapRect.left + (best.node.x - box.x) / scale,
-      y: rect.top - wrapRect.top + (best.node.y - box.y) / scale,
+      x: sp.x - wrapRect.left,
+      y: sp.y - wrapRect.top,
       r: Math.max((R[best.node.k] ?? 28) + 22, 14 * scale),
       node: best.node
     })
@@ -144,11 +146,9 @@ export function TreeView({
   }, [allocated, addedSet, removedSet])
 
   function onWheel(e: React.WheelEvent) {
-    const svg = svgRef.current
-    if (!svg) return
-    const rect = svg.getBoundingClientRect()
-    const mx = box.x + ((e.clientX - rect.left) / rect.width) * box.w
-    const my = box.y + ((e.clientY - rect.top) / rect.height) * box.h
+    const ctm = svgRef.current?.getScreenCTM()
+    if (!ctm) return
+    const { x: mx, y: my } = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse())
     const f = e.deltaY > 0 ? 1.25 : 0.8
     const w = Math.min(Math.max(box.w * f, 1500), full.w * 1.2)
     const h = (w / box.w) * box.h
@@ -163,11 +163,10 @@ export function TreeView({
 
   function onPointerMove(e: React.PointerEvent) {
     if (!drag.current) return onHoverMove(e)
-    const svg = svgRef.current
-    if (!svg) return
-    const rect = svg.getBoundingClientRect()
-    const dx = ((e.clientX - drag.current.px) / rect.width) * box.w
-    const dy = ((e.clientY - drag.current.py) / rect.height) * box.h
+    const ctm = svgRef.current?.getScreenCTM()
+    if (!ctm) return
+    const dx = (e.clientX - drag.current.px) / ctm.a
+    const dy = (e.clientY - drag.current.py) / ctm.a
     drag.current = { px: e.clientX, py: e.clientY }
     setBox((b) => ({ ...b, x: b.x - dx, y: b.y - dy }))
   }

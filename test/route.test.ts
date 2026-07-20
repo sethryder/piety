@@ -2,7 +2,20 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { parseRoute, advance, advanceById } from '../src/renderer/src/route.ts'
+import { dueTrials, parseRoute, advance, advanceById, tickTrials } from '../src/renderer/src/route.ts'
+
+test('tickTrials and dueTrials: progress, dismissal, completion', () => {
+  const v = parseRoute(['Complete {trial}\n➞ {enter|1_1_2} #The Coast\nComplete {trial}\n'], new Set())
+  // two trials: first in Twilight Strand (visit 0), second in The Coast (visit 1)
+  assert.deepEqual(dueTrials(v, 0, 0, []).map((t) => t.ordinal), [1]) // second zone not reached
+  assert.deepEqual(dueTrials(v, 1, 0, []).map((t) => t.ordinal), [1, 2])
+  assert.deepEqual(dueTrials(v, 1, 1, []).map((t) => t.ordinal), [2]) // one completed
+  assert.deepEqual(dueTrials(v, 1, 0, [1]).map((t) => t.ordinal), [2]) // one dismissed
+  const ticked = tickTrials(v[0], 1)
+  assert.equal(ticked.steps[0].done, true)
+  assert.ok(ticked.steps[0].text.endsWith('(1/6)'))
+  assert.equal(tickTrials(v[1], 1).steps[0].done, false)
+})
 
 const SAMPLE = `#section Act 1
 Find and kill {kill|Hillock}

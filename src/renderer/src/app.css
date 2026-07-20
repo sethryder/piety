@@ -191,10 +191,19 @@ body {
 
 .focus-step {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 10px;
   font-size: clamp(18px, 3vw, 32px);
   color: var(--text-primary);
+}
+
+/* badges must scale with the oversized step text */
+.focus-step .tag {
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 5px;
 }
 
 .then {

@@ -21,6 +21,7 @@ const tree = treeFiles[
 ]
 
 const R: Record<string, number> = { n: 28, o: 44, k: 58, j: 34, m: 30, s: 20 }
+const nodeList = Object.entries(tree.nodes)
 
 type Box = { x: number; y: number; w: number; h: number }
 
@@ -63,16 +64,42 @@ export function TreeView({
   const [box, setBox] = useState<Box>(() =>
     fitBox(added.length ? added : allocated, full)
   )
-  const [hover, setHover] = useState<{ x: number; y: number; node: TreeNode } | null>(null)
+  const [hover, setHover] = useState<{ x: number; y: number; r: number; node: TreeNode } | null>(
+    null
+  )
   const [hlId, setHlId] = useState<string | null>(null)
   const drag = useRef<{ px: number; py: number } | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
 
-  function showTip(e: React.MouseEvent, node: TreeNode) {
-    if (drag.current || !wrapRef.current) return
-    const rect = wrapRef.current.getBoundingClientRect()
-    setHover({ x: e.clientX - rect.left, y: e.clientY - rect.top, node })
+  // nodes are a few px across when zoomed out, so hover snaps to the nearest
+  // visible node within reach instead of requiring a direct hit
+  function onHoverMove(e: React.MouseEvent) {
+    if (drag.current) return
+    const svg = svgRef.current
+    const wrap = wrapRef.current
+    if (!svg || !wrap) return
+    const rect = svg.getBoundingClientRect()
+    const scale = box.w / rect.width // tree units per screen px
+    const mx = box.x + (e.clientX - rect.left) * scale
+    const my = box.y + (e.clientY - rect.top) * scale
+    let best: { node: TreeNode; d: number } | null = null
+    for (const [id, n] of nodeList) {
+      if (n.k === 'm' && !allocated.has(id) && !removedSet.has(id)) continue
+      const d = Math.hypot(n.x - mx, n.y - my)
+      if (!best || d < best.d) best = { node: n, d }
+    }
+    if (!best || best.d > Math.max((R[best.node.k] ?? 28) + 8 * scale, 28 * scale)) {
+      setHover(null)
+      return
+    }
+    const wrapRect = wrap.getBoundingClientRect()
+    setHover({
+      x: rect.left - wrapRect.left + (best.node.x - box.x) / scale,
+      y: rect.top - wrapRect.top + (best.node.y - box.y) / scale,
+      r: Math.max((R[best.node.k] ?? 28) + 22, 14 * scale),
+      node: best.node
+    })
   }
 
   // static scene, memoized once per delta; pan/zoom only touches the viewBox attr
@@ -109,8 +136,6 @@ export function TreeView({
           strokeWidth={isRemoved ? 12 : isAdded ? 10 : 0}
           strokeOpacity={isAdded ? 0.35 : 1}
           fillOpacity={isRemoved && !isOn ? 0.25 : 1}
-          onMouseEnter={(e) => showTip(e, n)}
-          onMouseLeave={() => setHover(null)}
         />
       )
     }
@@ -137,7 +162,7 @@ export function TreeView({
   }
 
   function onPointerMove(e: React.PointerEvent) {
-    if (!drag.current) return
+    if (!drag.current) return onHoverMove(e)
     const svg = svgRef.current
     if (!svg) return
     const rect = svg.getBoundingClientRect()
@@ -180,8 +205,21 @@ export function TreeView({
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={() => (drag.current = null)}
+          onMouseLeave={() => setHover(null)}
         >
           {scene}
+          {hover && (
+            <circle
+              cx={hover.node.x}
+              cy={hover.node.y}
+              r={hover.r}
+              fill="none"
+              stroke="#f2f5f9"
+              strokeWidth={Math.max(10, hover.r / 8)}
+              strokeOpacity={0.9}
+              pointerEvents="none"
+            />
+          )}
           {hl && (
             <circle
               className="tree-hl"

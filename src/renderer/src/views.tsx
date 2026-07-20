@@ -207,16 +207,16 @@ export function MixedView(p: ViewProps) {
         <div className="act-progress-fill" style={{ width: `${pct}%` }} />
       </div>
       <section className="zone-card">
-        <span className="micro-label">NOW IN</span>
-        <h1>{p.cur.zone}</h1>
-        <div className="zone-card-body">
+        <div className="zone-card-main">
+          <span className="micro-label">NOW IN</span>
+          <h1>{p.cur.zone}</h1>
           <ul className="steps">
             {p.cur.steps.map((s, i) => (
               <StepLine key={i} s={s} />
             ))}
           </ul>
-          <ZoneLayout areaId={p.cur.areaId} />
         </div>
+        <ZoneLayout areaId={p.cur.areaId} />
       </section>
       <DueBanners due={p.due} toggleOwned={p.toggleOwned} />
       <section className="up-next scroll">

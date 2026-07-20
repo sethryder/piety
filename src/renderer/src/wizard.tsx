@@ -8,6 +8,7 @@ export type WizardResult = {
   build: PobBuild | null // null = guide-only, no PoB import
   treeAssign: (number | null)[]
   leagueStart: boolean
+  library: boolean // Act 3 Library detour: unlocks Siosa's gem shop
   bandit: string | null // override; null = use the PoB's choice
   sourcePath: string | null // linked local PoB file; null = pasted code
 }
@@ -33,6 +34,7 @@ export function Wizard(props: {
       : (props.initial.build?.specs ?? []).map((s) => autoAssign(s.title))
   )
   const [leagueStart, setLeagueStart] = useState(props.initial.leagueStart)
+  const [library, setLibrary] = useState(props.initial.library)
   const [bandit, setBandit] = useState<string | null>(props.initial.bandit)
   const [buildFiles, setBuildFiles] = useState<BuildFile[]>([])
   const [sourcePath, setSourcePath] = useState<string | null>(props.initial.sourcePath)
@@ -74,9 +76,10 @@ export function Wizard(props: {
     () =>
       buildRoute([
         ...(leagueStart ? ['LEAGUE_START'] : []),
+        ...(library ? ['LIBRARY'] : []),
         ...banditFlags(bandit ?? parsed?.bandit ?? null)
       ]).length,
-    [leagueStart, bandit, parsed]
+    [leagueStart, library, bandit, parsed]
   )
 
   const set = parsed ? levelingSet(parsed) : null
@@ -118,7 +121,11 @@ export function Wizard(props: {
             </div>
             {props.logPath && <div className="wpath">{props.logPath}</div>}
             {props.logPath && props.lastLine && <div className="wlast">{props.lastLine}</div>}
-            <button className="primary" onClick={() => window.api.pickLog()}>
+            {/* once the log is found the real CTA is NEXT; browse drops to secondary */}
+            <button
+              className={props.logPath ? 'import-btn' : 'primary'}
+              onClick={() => window.api.pickLog()}
+            >
               BROWSE…
             </button>
             {!props.logPath && (
@@ -247,6 +254,14 @@ export function Wizard(props: {
               ))}
             </div>
             <label className="wfield">
+              <input
+                type="checkbox"
+                checked={library}
+                onChange={(e) => setLibrary(e.target.checked)}
+              />
+              Act 3 Library detour — unlocks Siosa, who sells nearly every gem
+            </label>
+            <label className="wfield">
               Bandit
               <select
                 value={bandit ?? ''}
@@ -272,8 +287,18 @@ export function Wizard(props: {
         {step === 4 && (
           <div className="wizard-step wizard-done">
             <span className="micro-label">READY</span>
-            <h1>Waiting for you to enter the Twilight Strand, exile.</h1>
-            <div className="whint">Tracking starts on your first zone line.</div>
+            {/* canClose = re-running setup: tracking continues, don't imply a restart */}
+            {props.canClose ? (
+              <>
+                <h1>All set, exile.</h1>
+                <div className="whint">Changes apply as soon as you finish.</div>
+              </>
+            ) : (
+              <>
+                <h1>Waiting for you to enter the Twilight Strand, exile.</h1>
+                <div className="whint">Tracking starts on your first zone line.</div>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -299,7 +324,14 @@ export function Wizard(props: {
           <button
             className="primary"
             onClick={() =>
-              props.onFinish({ build: parsed, treeAssign: assign, leagueStart, bandit, sourcePath })
+              props.onFinish({
+                build: parsed,
+                treeAssign: assign,
+                leagueStart,
+                library,
+                bandit,
+                sourcePath
+              })
             }
           >
             FINISH

@@ -22,6 +22,7 @@ export default function MiniApp() {
   const [build, setBuild] = useState<PobBuild | null>(() => load('pob-build', null))
   const [owned, setOwned] = useState<Record<string, boolean>>(() => loadProfile().owned)
   const [leagueStart, setLeagueStart] = useState<boolean>(() => load('league-start', true))
+  const [library, setLibrary] = useState<boolean>(() => load('library', true))
   const [banditOverride, setBanditOverride] = useState<string | null>(() =>
     load('bandit-override', null)
   )
@@ -32,6 +33,9 @@ export default function MiniApp() {
   const [locked, setLocked] = useState<boolean>(() => load('mini-locked', false))
   const [showMap, setShowMap] = useState<boolean>(() => load('mini-map', true))
   const [now, setNow] = useState(() => Date.now())
+  // freeze the clock while the game is closed; the main window rebases run.start
+  // on resume and the storage event delivers the shifted run here
+  const [pausedSince, setPausedSince] = useState<number | null>(null)
 
   // other windows' localStorage writes fire storage events here
   useEffect(() => {
@@ -39,6 +43,7 @@ export default function MiniApp() {
       setBuild(load('pob-build', null))
       setOwned(loadProfile().owned)
       setLeagueStart(load('league-start', true))
+      setLibrary(load('library', true))
       setBanditOverride(load('bandit-override', null))
       setRun(load('pace-run', null))
     }
@@ -47,14 +52,20 @@ export default function MiniApp() {
   }, [])
 
   useEffect(() => {
-    window.api.initState().then((s) => setIdx(s.idx))
+    window.api.initState().then((s) => {
+      setIdx(s.idx)
+      if (!s.poeRunning) setPausedSince(Date.now())
+    })
     const offIdx = window.api.onIdxSync(setIdx)
+    const offPoe = window.api.onPoeStatus((v) => setPausedSince(v ? null : Date.now()))
     const offLog = window.api.onLog((e) => {
+      setPausedSince(null) // any live log line proves the game is up
       if (e.type === 'level') setChar({ name: e.name, level: e.level })
       if (e.type === 'gen') setAreaLevel(e.areaLevel)
     })
     return () => {
       offIdx()
+      offPoe()
       offLog()
     }
   }, [])
@@ -72,9 +83,10 @@ export default function MiniApp() {
     () =>
       buildRoute([
         ...(leagueStart ? ['LEAGUE_START'] : []),
+        ...(library ? ['LIBRARY'] : []),
         ...banditFlags(banditOverride ?? build?.bandit ?? null)
       ]),
-    [build, leagueStart, banditOverride]
+    [build, leagueStart, library, banditOverride]
   )
 
   const plan = useMemo(() => {
@@ -86,7 +98,7 @@ export default function MiniApp() {
   const cur = visits[Math.min(idx, visits.length - 1)]
   const due = plan.filter((g) => !g.granted && g.visitIdx <= idx && !owned[g.gemId])
   const next = visits[idx + 1]
-  const elapsed = run ? (run.total ?? now - run.start) : null
+  const elapsed = run ? (run.total ?? (pausedSince ?? now) - run.start) : null
 
   function step(d: number) {
     const ni = Math.min(Math.max(idx + d, 0), visits.length - 1)
@@ -114,7 +126,12 @@ export default function MiniApp() {
           {char ? `${char.name} · ${char.level}` : locked ? '' : 'drag me'}
         </span>
         <span className="spacer" />
-        {elapsed !== null && <span className="footer-chip pace-chip">{fmt(elapsed)}</span>}
+        {elapsed !== null && (
+          <span className="footer-chip pace-chip">
+            {fmt(elapsed)}
+            {pausedSince !== null && run?.total === null && ' ⏸'}
+          </span>
+        )}
         <button className="mini-btn" title="Step route back" disabled={idx === 0} onClick={() => step(-1)}>
           ◀
         </button>
@@ -153,6 +170,11 @@ export default function MiniApp() {
               <StepLine key={i} s={s} />
             ))}
           </ul>
+          {showMap && (
+            <div className="mini-map-inline">
+              <ZoneLayout areaId={cur.areaId} />
+            </div>
+          )}
           {due.length > 0 && (
             <div className="mini-due">
               {due.map((g) => (
@@ -169,7 +191,11 @@ export default function MiniApp() {
             </div>
           )}
         </div>
-        {showMap && <ZoneLayout areaId={cur.areaId} />}
+        {showMap && (
+          <div className="mini-map-side">
+            <ZoneLayout areaId={cur.areaId} />
+          </div>
+        )}
       </div>
     </div>
   )

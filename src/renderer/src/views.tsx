@@ -160,7 +160,7 @@ function UpNextRows({ visits, idx, setIdx, count, preview }: Pick<ViewProps, 'vi
 }
 
 export function FocusView(p: ViewProps) {
-  const primary = p.cur.steps[0]
+  const [primary, ...rest] = p.cur.steps
   return (
     <div className="focus">
       <span className="micro-label">NOW IN</span>
@@ -172,10 +172,22 @@ export function FocusView(p: ViewProps) {
               {t}
             </span>
           ))}
-          <span>{primary.text}</span>
+          <span>{rich(primary.text)}</span>
         </div>
       )}
-      {primary?.hints[0] && <div className="hint">↳ {primary.hints[0]}</div>}
+      {primary?.hints.map((h, j) => (
+        <div key={j} className="hint">
+          ↳ {rich(h)}
+        </div>
+      ))}
+      {rest.length > 0 && (
+        <ul className="steps focus-rest">
+          {rest.map((s, i) => (
+            <StepLine key={i} s={s} />
+          ))}
+        </ul>
+      )}
+      <ZoneLayout areaId={p.cur.areaId} />
       <DueBanners due={p.due} toggleOwned={p.toggleOwned} />
       <div className="then">
         <span className="micro-label">THEN</span>
@@ -302,6 +314,13 @@ function RunHistory({ history, pb }: { history: Run[]; pb: Run | null }) {
 
 export function PaceView({ run, pb, history, now, paused, visits, resetRun }: Pick<ViewProps, 'run' | 'pb' | 'history' | 'now' | 'paused' | 'visits' | 'resetRun'>) {
   const [openAct, setOpenAct] = useState<number | null>(null)
+  // reset is one accidental click from ending a timed run: ask twice, disarm after 3s
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    if (!armed) return
+    const t = setTimeout(() => setArmed(false), 3000)
+    return () => clearTimeout(t)
+  }, [armed])
   if (!run)
     return (
       <div className="pace">
@@ -381,8 +400,14 @@ export function PaceView({ run, pb, history, now, paused, visits, resetRun }: Pi
         </tbody>
       </table>
       <RunHistory history={history} pb={pb} />
-      <button className="import-btn" onClick={resetRun}>
-        RESET RUN
+      <button
+        className="import-btn"
+        onClick={() => {
+          if (armed) resetRun()
+          setArmed(!armed)
+        }}
+      >
+        {armed ? 'CONFIRM RESET' : 'RESET RUN'}
       </button>
     </div>
   )
@@ -417,7 +442,7 @@ export function DenseView(p: ViewProps) {
         })}
       </div>
       <div className="tab-strip">
-        {['GEMS', 'SOCKETS', 'TREE', 'CLIENT.LOG', 'PACE'].map((t) => (
+        {['GEMS', 'SOCKETS', 'TREE', 'LOG', 'PACE'].map((t) => (
           <button key={t} className={`tab ${p.tab === t ? 'active' : ''}`} onClick={() => p.setTab(t)}>
             {t}
           </button>
@@ -436,7 +461,7 @@ export function DenseView(p: ViewProps) {
                 : 'Import a build to see passive tree progression.'}
             </div>
           ))}
-        {p.tab === 'CLIENT.LOG' && <LogPanel logLines={p.logLines} />}
+        {p.tab === 'LOG' && <LogPanel logLines={p.logLines} />}
         {p.tab === 'PACE' && (
           <PaceView
             run={p.run}

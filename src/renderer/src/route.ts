@@ -149,12 +149,16 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
   return visits
 }
 
-// Next matching visit: stay if already there, else scan forward; scan from
-// the top as manual-backtrack recovery.
+// Nearest matching visit: stay if already there, else the closest match in
+// either direction, preferring forward on ties. Walking back into a town must
+// match the town visit just behind, not one far ahead (which would skip zones
+// and stamp their splits prematurely).
 function scan(visits: ZoneVisit[], cur: number, match: (v: ZoneVisit) => boolean): number {
   if (visits[cur] && match(visits[cur])) return cur
-  for (let i = cur + 1; i < visits.length; i++) if (match(visits[i])) return i
-  for (let i = 0; i < cur; i++) if (match(visits[i])) return i
+  for (let d = 1; d < visits.length; d++) {
+    if (cur + d < visits.length && match(visits[cur + d])) return cur + d
+    if (cur - d >= 0 && match(visits[cur - d])) return cur - d
+  }
   return cur
 }
 

@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { PobBuild } from '../../shared/pob'
 import { levelingSet } from '../../shared/pob'
 import type { GemPlanEntry } from './gemPlan'
-import { actEnd, fmt, lastCrossing, type Run } from './pace'
+import { actSegment, actStart, bestSegments, fmt, lastCrossing, type Run } from './pace'
 import type { Step, ZoneVisit } from './route'
 import { TreeView } from './TreeView'
 import { ZoneLayout } from './ZoneLayout'
@@ -30,6 +30,7 @@ export type ViewProps = {
   setTab: (t: string) => void
   run: Run | null
   pb: Run | null
+  history: Run[]
   now: number
   resetRun: () => void
   treeInfo: TreeInfo | null
@@ -222,15 +223,73 @@ function LogPanel({ logLines }: Pick<ViewProps, 'logLines'>) {
   )
 }
 
-export function PaceView({ run, pb, now, cur, resetRun }: Pick<ViewProps, 'run' | 'pb' | 'now' | 'cur' | 'resetRun'>) {
-  if (!run) return <div className="empty">Run starts when you enter the Twilight Strand.</div>
+function ZoneSplitRows({ run, pb, visits, act }: { run: Run; pb: Run | null; visits: ZoneVisit[]; act: number }) {
+  return (
+    <>
+      {visits.map((v, i) => ({ v, i })).filter(({ v }) => v.act === act).map(({ v, i }) => {
+        const t = run.zones?.[i]
+        const pbT = pb?.zones?.[i]
+        const d = t !== undefined && pbT !== undefined ? t - pbT : null
+        return (
+          <tr key={`z${i}`} className="zone-split">
+            <td />
+            <td className="split-zone-name">{v.zone}</td>
+            <td className="split-time">{t !== undefined ? fmt(t) : pbT !== undefined ? fmt(pbT) : '—'}</td>
+            <td className={`split-delta ${d === null ? '' : d <= 0 ? 'ahead' : 'behind'}`}>
+              {d !== null ? fmt(d, true) : t === undefined && pbT !== undefined ? 'PB' : ''}
+            </td>
+            <td />
+          </tr>
+        )
+      })}
+    </>
+  )
+}
+
+function RunHistory({ history, pb }: { history: Run[]; pb: Run | null }) {
+  if (history.length === 0) return null
+  return (
+    <>
+      <span className="micro-label">RUN HISTORY</span>
+      <table className="splits">
+        <tbody>
+          {history.map((h, i) => {
+            const d = h !== pb && h.total !== null && pb?.total != null ? h.total - pb.total : null
+            return (
+              <tr key={i}>
+                <td className="split-act">RUN {i + 1}</td>
+                <td className="split-date">{new Date(h.start).toLocaleDateString()}</td>
+                <td className="split-time">{h.total !== null ? fmt(h.total) : '—'}</td>
+                <td className={`split-delta ${h === pb ? 'ahead' : d === null ? '' : d <= 0 ? 'ahead' : 'behind'}`}>
+                  {h === pb ? 'PB' : d !== null ? fmt(d, true) : `A${lastCrossing(h)}`}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </>
+  )
+}
+
+export function PaceView({ run, pb, history, now, visits, resetRun }: Pick<ViewProps, 'run' | 'pb' | 'history' | 'now' | 'visits' | 'resetRun'>) {
+  const [openAct, setOpenAct] = useState<number | null>(null)
+  if (!run)
+    return (
+      <div className="pace">
+        <div className="empty">Run starts when you enter the Twilight Strand.</div>
+        <RunHistory history={history} pb={pb} />
+      </div>
+    )
   const elapsed = run.total ?? now - run.start
   const cross = lastCrossing(run)
+  const inAct = elapsed - (actStart(run, cross) ?? 0)
   const delta =
     pb && run.splits[cross] !== undefined && pb.splits[cross] !== undefined
       ? run.splits[cross] - pb.splits[cross]
       : null
   const proj = pb?.total != null ? elapsed + pb.total - (pb.splits[cross] ?? 0) : null
+  const best = bestSegments(history)
 
   return (
     <div className="pace">
@@ -251,27 +310,49 @@ export function PaceView({ run, pb, now, cur, resetRun }: Pick<ViewProps, 'run' 
         </div>
       </div>
       <table className="splits">
+        <thead>
+          <tr>
+            <th />
+            <th className="split-act">SPLIT</th>
+            <th className="split-time">TIME</th>
+            <th className="split-delta">Δ PB</th>
+            <th className="split-best">BEST</th>
+          </tr>
+        </thead>
         <tbody>
           {Array.from({ length: 10 }, (_, i) => i + 1).map((act) => {
-            const end = actEnd(run, act)
-            const state = end !== null ? 'done' : act === cur.act && !run.total ? 'current' : 'future'
-            const pbEnd = pb ? actEnd(pb, act) : null
-            const d = end !== null && pbEnd !== null ? end - pbEnd : null
+            const seg = actSegment(run, act)
+            const state = seg !== null ? 'done' : act === cross && run.total === null ? 'current' : 'future'
+            const pbSeg = pb ? actSegment(pb, act) : null
+            const d =
+              seg !== null && pbSeg !== null
+                ? seg - pbSeg
+                : state === 'current' && pbSeg !== null
+                  ? inAct - pbSeg
+                  : null
             return (
-              <tr key={act} className={state}>
-                <td className="split-mark">{state === 'done' ? '✓' : state === 'current' ? '▶' : '·'}</td>
-                <td className="split-act">ACT {act}</td>
-                <td className="split-time">
-                  {end !== null ? fmt(end) : state === 'current' ? fmt(elapsed) : pbEnd !== null ? fmt(pbEnd) : '—'}
-                </td>
-                <td className={`split-delta ${d === null ? '' : d <= 0 ? 'ahead' : 'behind'}`}>
-                  {d !== null ? fmt(d, true) : ''}
-                </td>
-              </tr>
+              <Fragment key={act}>
+                <tr
+                  className={`${state} act-row`}
+                  onClick={() => setOpenAct(openAct === act ? null : act)}
+                >
+                  <td className="split-mark">{state === 'done' ? '✓' : state === 'current' ? '▶' : '·'}</td>
+                  <td className="split-act">ACT {act}</td>
+                  <td className={`split-time ${seg !== null && best[act] !== undefined && seg < best[act] ? 'gold' : ''}`}>
+                    {seg !== null ? fmt(seg) : state === 'current' ? fmt(inAct) : pbSeg !== null ? fmt(pbSeg) : '—'}
+                  </td>
+                  <td className={`split-delta ${d === null ? '' : d <= 0 ? 'ahead' : 'behind'}`}>
+                    {d !== null ? fmt(d, true) : state === 'future' && pbSeg !== null ? 'PB' : ''}
+                  </td>
+                  <td className="split-best">{best[act] !== undefined ? fmt(best[act]) : ''}</td>
+                </tr>
+                {openAct === act && <ZoneSplitRows run={run} pb={pb} visits={visits} act={act} />}
+              </Fragment>
             )
           })}
         </tbody>
       </table>
+      <RunHistory history={history} pb={pb} />
       <button className="import-btn" onClick={resetRun}>
         RESET RUN
       </button>
@@ -328,7 +409,9 @@ export function DenseView(p: ViewProps) {
             </div>
           ))}
         {p.tab === 'CLIENT.LOG' && <LogPanel logLines={p.logLines} />}
-        {p.tab === 'PACE' && <PaceView run={p.run} pb={p.pb} now={p.now} cur={p.cur} resetRun={p.resetRun} />}
+        {p.tab === 'PACE' && (
+          <PaceView run={p.run} pb={p.pb} history={p.history} now={p.now} visits={p.visits} resetRun={p.resetRun} />
+        )}
       </div>
     </div>
   )

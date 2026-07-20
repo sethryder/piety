@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { actEnd, finishRun, fmt, lastCrossing, pbOf, recordActEntry, startRun } from '../src/renderer/src/pace.ts'
+import { actEnd, actSegment, actStart, bestSegments, finishRun, fmt, lastCrossing, pbOf, recordActEntry, recordZoneEntry, startRun } from '../src/renderer/src/pace.ts'
 import { activeSpecIdx, autoAssign, BREAKPOINTS, treeDelta } from '../src/shared/trees.ts'
 import { parseLibraryFolders } from '../src/main/logtail.ts'
 import { decodePobCode } from '../src/main/pob.ts'
@@ -21,12 +21,33 @@ test('run lifecycle and splits', () => {
   assert.equal(actEnd(run, 2), 130_000)
   assert.equal(actEnd(run, 3), null)
   assert.equal(lastCrossing(run), 3)
+  assert.equal(actStart(run, 1), 0)
+  assert.equal(actStart(run, 3), 130_000)
+  assert.equal(actStart(run, 4), null) // not entered yet
+  assert.equal(actSegment(run, 1), 60_000)
+  assert.equal(actSegment(run, 2), 70_000) // per-act duration, not cumulative
+  assert.equal(actSegment(run, 3), null) // still in progress
+  run = recordZoneEntry(run, 0, t0)
+  run = recordZoneEntry(run, 1, t0 + 30_000)
+  run = recordZoneEntry(run, 1, t0 + 45_000) // re-entering a zone keeps first split
+  assert.deepEqual(run.zones, { 0: 0, 1: 30_000 })
+  const legacy = recordZoneEntry({ start: t0, splits: {}, total: null }, 2, t0 + 5_000)
+  assert.deepEqual(legacy.zones, { 2: 5_000 }) // runs stored before zones existed
   run = finishRun(run, t0 + 200_000)
   assert.equal(run.total, 200_000)
+  assert.equal(recordZoneEntry(run, 5, t0 + 250_000).zones![5], undefined) // no post-run entries
   assert.equal(actEnd(run, 10), 200_000)
 
   const slower = { ...run, total: 300_000 }
   assert.equal(pbOf([slower, run, startRun(0)]), run) // incomplete runs ignored
+
+  // best segments pool finished and abandoned runs; an act 1 sprint counts
+  // once act 2 is entered, even if the run was reset right after
+  const sprint = recordActEntry(startRun(0), 2, 50_000)
+  const best = bestSegments([run, sprint])
+  assert.equal(best[1], 50_000) // sprint beat the full run's 60_000
+  assert.equal(best[2], 70_000) // only the full run completed act 2
+  assert.equal(best[3], undefined) // in-progress segments never count
 })
 
 test('fmt', () => {

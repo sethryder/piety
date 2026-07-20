@@ -13,7 +13,7 @@ It is built for a second monitor. Not an in-game overlay, just a normal window y
 - **Gem shopping list** built from your Path of Building import: what to buy, from which vendor, after which quest, for your class. Gems you get for free (starting gem, beach chest) are marked as granted
 - **Passive tree progression** rendered on the real skill tree: what you should have allocated by now and where the next points go, based on the tree specs in your PoB build
 - **Live Path of Building sync**: link a build from your local PoB saves and every save in PoB updates the app. Pasting an export code or a pobb.in link works too
-- **Pace timer** with per-act splits, personal best comparison, and a projected campaign finish. Starts automatically when you enter the Twilight Strand, stops at Karui Shores
+- **Pace timer** with per-act splits, per-zone splits, personal best comparison, best act segments (abandoned runs count, so act sprints are tracked too), run history, and a projected campaign finish. Starts automatically when you enter the Twilight Strand, stops at Karui Shores. Click the footer timer chip to open the full pace panel
 - **Four layouts** (glance, mixed, dense checklist, split with tree and gems) plus a compact band layout when the window is short, and a mirror option for left-side monitors
 - **Mini overlay**: a small always-on-top window with the current zone, steps, and gem alerts. Lockable so you cannot drag it by accident
 - **Auto updates** via GitHub releases

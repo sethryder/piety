@@ -6,8 +6,8 @@ import { buildRoute } from './routeData'
 import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
 import { levelingSet } from '../../shared/pob'
-import { finishRun, fmt, lastCrossing, pbOf, recordActEntry, startRun, type Run } from './pace'
-import { BandView, DenseView, FocusView, MixedView, SplitView, type ViewProps } from './views'
+import { actSegment, actStart, finishRun, fmt, lastCrossing, pbOf, recordActEntry, recordZoneEntry, startRun, type Run } from './pace'
+import { BandView, DenseView, FocusView, MixedView, PaceView, SplitView, type ViewProps } from './views'
 import { Wizard, type WizardResult } from './wizard'
 
 function load<T>(key: string, fallback: T): T {
@@ -49,6 +49,7 @@ export default function App() {
   const [now, setNow] = useState(() => Date.now())
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   const [wizardOpen, setWizardOpen] = useState(() => load<PobBuild | null>('pob-build', null) === null)
+  const [paceOpen, setPaceOpen] = useState(false)
   const [pobSource, setPobSource] = useState<string | null>(() => load('pob-source', null))
 
   useEffect(() => window.api.onUpdateReady(setUpdateVersion), [])
@@ -132,9 +133,13 @@ export default function App() {
         let r = runRef.current
         // only a brand-new character reaches the Twilight Strand: always a fresh run
         const atStart = e.type === 'gen' ? e.areaId === visits[0].areaId : e.zone === visits[0].zone
-        if (atStart) r = startRun(nowMs)
+        if (atStart) {
+          stashPartial(r)
+          r = startRun(nowMs)
+        }
         if (r) {
           r = recordActEntry(r, visits[ni].act, nowMs)
+          r = recordZoneEntry(r, ni, nowMs)
           // finishing requires having entered act 10 first: another character on
           // the same client loading into Karui Shores must not fake a completion
           if (ni === visits.length - 1 && r.total === null && r.splits[10] !== undefined) {
@@ -222,7 +227,15 @@ export default function App() {
     setOwned((o) => save('owned-gems', { ...o, [gemId]: !o[gemId] }))
   }
 
+  // keep partial runs (act 2+ reached): their segments feed best-act comparisons
+  function stashPartial(r: Run | null) {
+    if (r && r.total === null && Object.keys(r.splits).length) {
+      setHistory((h) => save('pace-history', [...h, r]))
+    }
+  }
+
   function resetRun() {
+    stashPartial(runRef.current)
     runRef.current = null
     setRun(save('pace-run', null))
   }
@@ -239,10 +252,19 @@ export default function App() {
 
   const elapsed = run ? (run.total ?? now - run.start) : null
   const cross = run ? lastCrossing(run) : 1
-  const paceDelta =
-    run && pb && run.splits[cross] !== undefined && pb.splits[cross] !== undefined
-      ? run.splits[cross] - pb.splits[cross]
-      : null
+  // footer chip: finished runs show the final total, live runs show time-in-act
+  const chipTime = run && elapsed !== null ? (run.total ?? elapsed - (actStart(run, cross) ?? 0)) : null
+  const pbSeg = run && pb ? actSegment(pb, cross) : null
+  const paceDelta = !run
+    ? null
+    : run.total !== null
+      ? pb?.total != null
+        ? run.total - pb.total
+        : null
+      : pbSeg !== null
+        ? chipTime! - pbSeg
+        : null
+  const runNo = history.length + (run && run.total === null ? 1 : 0)
 
   const viewProps: ViewProps = {
     visits,
@@ -260,6 +282,7 @@ export default function App() {
     setTab,
     run,
     pb,
+    history,
     now,
     resetRun,
     treeInfo
@@ -275,6 +298,7 @@ export default function App() {
           {char ? `${char.name} · Lv ${char.level}` : 'No character'}
         </span>
         <span className="act-chip">ACT {cur.act}</span>
+        {run && runNo > 0 && <span className="act-chip">RUN {runNo}</span>}
         <span className="spacer" />
         <div className={`view-toggle ${band ? 'dimmed' : ''}`}>
           {(['FOCUS', 'MIXED', 'DENSE', 'SPLIT'] as const).map((v) => (
@@ -320,6 +344,17 @@ export default function App() {
             onClose={() => setWizardOpen(false)}
             onFinish={finishWizard}
           />
+        ) : paceOpen ? (
+          <div className="pace-full">
+            <div className="pace-full-head">
+              <span className="micro-label">PACE</span>
+              <span className="spacer" />
+              <button className="import-btn" onClick={() => setPaceOpen(false)}>
+                CLOSE
+              </button>
+            </div>
+            <PaceView run={run} pb={pb} history={history} now={now} visits={visits} resetRun={resetRun} />
+          </div>
         ) : band ? (
           <BandView {...viewProps} />
         ) : ui.view === 'FOCUS' ? (
@@ -352,8 +387,12 @@ export default function App() {
             TREE {tree.title} · {tree.nodeCount}
           </span>
         )}
-        {run && elapsed !== null && (
-          <span className="footer-chip pace-chip">
+        {run && chipTime !== null && (
+          <button
+            className="footer-chip pace-chip"
+            title="Open pace panel"
+            onClick={() => setPaceOpen((o) => !o)}
+          >
             <span
               className="gem-dot"
               style={{
@@ -361,9 +400,9 @@ export default function App() {
                   paceDelta === null ? '#8a93a2' : paceDelta <= 0 ? '#7fc98f' : '#e08b7d'
               }}
             />
-            A{cur.act} · {fmt(elapsed)}
+            A{cross} · {fmt(chipTime)}
             {paceDelta !== null && ` · ${fmt(paceDelta, true)}`}
-          </span>
+          </button>
         )}
       </footer>
     </>

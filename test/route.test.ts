@@ -70,6 +70,8 @@ test('advanceById tracks by area id', () => {
   assert.equal(advanceById(v, 2, '1_1_town'), 3)
   assert.equal(advanceById(v, 5, '1_1_1'), 0) // new character: back to the start
   assert.equal(advanceById(v, 2, 'some_hideout'), 2) // unknown area: stay put
+  // walking back into town matches the nearest town visit, not a distant one
+  assert.equal(advanceById(v, 4, '1_1_town'), 3)
 })
 
 test('real route files parse clean', () => {

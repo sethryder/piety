@@ -198,3 +198,8 @@ test('quest_text jammed against a count gets its space restored', () => {
   assert.equal(v[0].steps[0].text, 'Find 3x Glyph')
   assert.equal(v[0].steps[1].text, 'Find Allflame')
 })
+
+test('two quest fragments on one line yield one QUEST tag', () => {
+  const v = parseRoute(['Find {quest_text|Slave Girl}, take {quest_text|Allflame}'], new Set())
+  assert.deepEqual(v[0].steps[0].tags, ['QUEST'])
+})

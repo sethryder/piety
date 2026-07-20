@@ -5,10 +5,12 @@ export type LogEvent =
   | { type: 'enter'; zone: string } // localized name, fires on every entry
   | { type: 'gen'; areaId: string; areaLevel: number; seed: number } // new instances only, language-independent
   | { type: 'level'; name: string; cls: string; level: number }
+  | { type: 'slain'; name: string }
 
 const GEN_RE = /\] Generating level (\d+) area "([^"]+)" with seed (\d+)/
 const ENTER_RE = /\] : You have entered (.+)\.$/
 const LEVEL_RE = /\] : (\S+) \((\w+)\) is now level (\d+)$/
+const SLAIN_RE = /\] : (\S+) has been slain\.$/
 
 export function parseLine(line: string): LogEvent | null {
   const gen = GEN_RE.exec(line)
@@ -17,6 +19,8 @@ export function parseLine(line: string): LogEvent | null {
   if (enter) return { type: 'enter', zone: enter[1] }
   const level = LEVEL_RE.exec(line)
   if (level) return { type: 'level', name: level[1], cls: level[2], level: Number(level[3]) }
+  const slain = SLAIN_RE.exec(line)
+  if (slain) return { type: 'slain', name: slain[1] }
   return null
 }
 

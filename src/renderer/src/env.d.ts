@@ -5,6 +5,7 @@ type LogEvent =
   | { type: 'enter'; zone: string }
   | { type: 'gen'; areaId: string; areaLevel: number; seed: number }
   | { type: 'level'; name: string; cls: string; level: number }
+  | { type: 'slain'; name: string }
 
 interface Window {
   api: {

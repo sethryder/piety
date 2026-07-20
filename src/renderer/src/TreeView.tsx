@@ -64,6 +64,7 @@ export function TreeView({
     fitBox(added.length ? added : allocated, full)
   )
   const [hover, setHover] = useState<{ x: number; y: number; node: TreeNode } | null>(null)
+  const [hlId, setHlId] = useState<string | null>(null)
   const drag = useRef<{ px: number; py: number } | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -145,10 +146,10 @@ export function TreeView({
   }
 
   const notables = added
-    .map((id) => tree.nodes[id])
-    .filter((n) => n && (n.k === 'o' || n.k === 'k'))
-    .map((n) => n.n)
+    .map((id) => ({ id, node: tree.nodes[id] }))
+    .filter(({ node }) => node && (node.k === 'o' || node.k === 'k'))
   const smalls = added.length - notables.length
+  const hl = hlId ? tree.nodes[hlId] : null
 
   return (
     <div className="tree-view">
@@ -179,6 +180,17 @@ export function TreeView({
           onPointerUp={() => (drag.current = null)}
         >
           {scene}
+          {hl && (
+            <circle
+              className="tree-hl"
+              cx={hl.x}
+              cy={hl.y}
+              r={(R[hl.k] ?? 28) + 22}
+              fill="none"
+              stroke="#f2f5f9"
+              strokeWidth={12}
+            />
+          )}
         </svg>
         {hover && (
           <div
@@ -199,9 +211,14 @@ export function TreeView({
       </div>
       {added.length > 0 && (
         <div className="tree-list">
-          {notables.map((n) => (
-            <span key={n} className="socket-chip tree-notable">
-              {n}
+          {notables.map(({ id, node }) => (
+            <span
+              key={id}
+              className="socket-chip tree-notable"
+              onMouseEnter={() => setHlId(id)}
+              onMouseLeave={() => setHlId(null)}
+            >
+              {node.n}
             </span>
           ))}
           {smalls > 0 && <span className="whint">+{smalls} small passives</span>}

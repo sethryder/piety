@@ -794,6 +794,23 @@ button.pace-chip:hover {
 .tree-notable {
   color: var(--positive);
   border-color: rgba(127, 201, 143, 0.4);
+  cursor: default;
+}
+
+.tree-notable:hover {
+  border-color: var(--positive);
+  background: rgba(127, 201, 143, 0.12);
+}
+
+.tree-hl {
+  pointer-events: none;
+  animation: tree-hl-pulse 1s ease-in-out infinite;
+}
+
+@keyframes tree-hl-pulse {
+  50% {
+    stroke-opacity: 0.35;
+  }
 }
 
 /* ---- mini overlay window ---- */

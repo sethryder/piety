@@ -29,6 +29,7 @@ interface Window {
     onUpdateReady: (cb: (version: string) => void) => () => void
     installUpdate: () => void
     toggleMini: () => void
+    setMiniLock: (locked: boolean) => void
     syncIdx: (idx: number) => void
     onIdxSync: (cb: (idx: number) => void) => () => void
   }

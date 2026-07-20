@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld('api', {
   onUpdateReady: (cb: (version: string) => void) => on('update-ready', cb),
   installUpdate: () => ipcRenderer.send('install-update'),
   toggleMini: () => ipcRenderer.send('toggle-mini'),
+  setMiniLock: (locked: boolean) => ipcRenderer.send('mini-lock', locked),
   syncIdx: (idx: number) => ipcRenderer.send('sync-idx', idx),
   onIdxSync: (cb: (idx: number) => void) => on('idx-sync', cb)
 })

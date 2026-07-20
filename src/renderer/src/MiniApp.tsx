@@ -56,6 +56,9 @@ export default function MiniApp() {
     }
   }, [])
 
+  // lock covers resize too, and reapplies the persisted state on open
+  useEffect(() => window.api.setMiniLock(locked), [locked])
+
   useEffect(() => {
     if (!run || run.total !== null) return
     const t = setInterval(() => setNow(Date.now()), 1000)

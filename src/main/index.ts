@@ -188,6 +188,8 @@ function toggleMini(): void {
 }
 
 ipcMain.on('toggle-mini', toggleMini)
+// locked mini = fully frozen geometry: dragging is blocked in CSS, resizing here
+ipcMain.on('mini-lock', (_e, locked: boolean) => mini?.setResizable(!locked))
 
 function createWindow(): void {
   const win = new BrowserWindow({

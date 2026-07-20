@@ -93,7 +93,7 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
       let moveId = ''
       let stepTrial = 0
       const text = line
-        .replace(FRAG_RE, (_m, type: string, rawArg?: string) => {
+        .replace(FRAG_RE, (_m, type: string, rawArg: string | undefined, offset: number) => {
           const arg = rawArg ?? ''
           switch (type) {
             case 'kill':
@@ -122,7 +122,10 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
               return comment ?? arg
             case 'quest_text':
               tags.push('QUEST')
-              return arg
+              // upstream renders this fragment as a styled chunk, so
+              // "3x{quest_text|Glyph}" reads fine there; flattened to plain
+              // text the space must be restored
+              return /\w$/.test(line.slice(0, offset)) ? ` ${arg}` : arg
             case 'trial':
               tags.push('TRIAL')
               stepTrial = ++trialN

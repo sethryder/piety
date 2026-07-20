@@ -697,7 +697,9 @@ button.pace-chip:hover {
   display: block;
   max-width: 100%;
   max-height: 240px;
-  border-radius: 8px;
+  /* rounded corners; framed images additionally get their baked-in border
+     cropped via an inline clip-path set in ZoneLayout onLoad */
+  clip-path: inset(0 round 8px);
   background: #0a0c0f;
 }
 

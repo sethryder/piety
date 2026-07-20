@@ -155,6 +155,8 @@ body {
   gap: 14px;
   padding: 0 16px 16px;
   height: 100%;
+  /* the zone-card row/column switch queries this container */
+  container-type: inline-size;
 }
 
 .act-progress {
@@ -814,7 +816,8 @@ button.pace-chip:hover {
   background: #0a0c0f;
   border: 1px solid var(--border-card);
   border-radius: 10px;
-  cursor: grab;
+  /* arrow, not grab: the hand hides the tiny nodes you're aiming at */
+  cursor: default;
   touch-action: none;
 }
 
@@ -1350,35 +1353,35 @@ button.pace-chip:hover {
   border: 1px solid var(--border-card);
   border-radius: 10px;
   padding: 16px 20px;
-  container-type: inline-size;
-}
-
-.zone-card-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
-/* wide card: steps left, layout image beside them */
+/* wide card: the map sits beside the whole text block (title included) so the
+   image doesn't stack under the header and stretch the card */
 @container (min-width: 640px) {
-  .zone-card-body {
+  .zone-card {
     flex-direction: row;
     align-items: flex-start;
     gap: 18px;
   }
 
-  .zone-card-body .steps {
+  .zone-card-main {
     flex: 1;
     min-width: 0;
   }
 
-  .zone-card-body .zone-layout {
-    flex: 0 0 40%;
+  /* shrink-wrap: the image sets the column width, so the map hugs the card's
+     right edge and the count chip stays under the image */
+  .zone-card .zone-layout {
+    flex: 0 1 auto;
+    max-width: 45%;
     margin: 0;
   }
 
-  .zone-card-body .zone-layout img {
+  .zone-card .zone-layout img {
     max-height: 220px;
+    max-width: 100%;
   }
 }
 

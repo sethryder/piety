@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { banditFlags, classMatches, type PobBuild } from '../../shared/pob'
 import { activeSpecIdx, autoAssign, treeDelta } from '../../shared/trees'
-import { advance, advanceById, dueTrials, tickTrials } from './route'
+import { advance, advanceById, dueLabs, tickTrials } from './route'
 import { buildRoute, defaultTexts } from './routeData'
 import { RouteEditor } from './RouteEditor'
 import { planGems } from './gemPlan'
@@ -38,7 +38,7 @@ export default function App() {
   const [shortWindow, setShortWindow] = useState(() => window.innerHeight < 520)
   const [idx, setIdx] = useState(() => loadProfile().idx)
   const [trials, setTrials] = useState(() => loadProfile().trials ?? 0)
-  const [hiddenTrials, setHiddenTrials] = useState<number[]>(() => loadProfile().hiddenTrials ?? [])
+  const [hiddenLabs, setHiddenLabs] = useState<number[]>(() => loadProfile().hiddenLabs ?? [])
   const [char, setChar] = useState<{ name: string; level: number; cls: string } | null>(null)
   const [areaLevel, setAreaLevel] = useState<number | null>(null)
   const [logLines, setLogLines] = useState<string[]>([])
@@ -107,15 +107,15 @@ export default function App() {
       }),
     []
   )
-  const hideTrial = (ordinal: number) =>
-    setHiddenTrials((h) => (h.includes(ordinal) ? h : [...h, ordinal]))
+  const hideLab = (lab: number) =>
+    setHiddenLabs((h) => (h.includes(lab) ? h : [...h, lab]))
 
   // apply banner actions clicked in the mini; persistence echoes back to it
   useEffect(
     () =>
       window.api.onMiniAction((a) => {
         if (a.kind === 'toggle-owned') setOwned((o) => ({ ...o, [a.gemId]: !o[a.gemId] }))
-        else if (a.kind === 'hide-trial') hideTrial(a.ordinal)
+        else if (a.kind === 'hide-lab') hideLab(a.lab)
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
@@ -162,8 +162,8 @@ export default function App() {
 
   // persist the active profile on every change; char switches redirect charRef first
   useEffect(() => {
-    saveProfile(charRef.current, { owned, idx, trials, hiddenTrials })
-  }, [owned, idx, trials, hiddenTrials])
+    saveProfile(charRef.current, { owned, idx, trials, hiddenLabs })
+  }, [owned, idx, trials, hiddenLabs])
 
   // Auto-pause: while the game is closed the clock freezes at pausedSince, and
   // on resume the run's start shifts forward by the gap, so every split
@@ -242,7 +242,7 @@ export default function App() {
           charRef.current = e.name
           setOwned(prof.owned)
           setTrials(prof.trials ?? 0)
-          setHiddenTrials(prof.hiddenTrials ?? [])
+          setHiddenLabs(prof.hiddenLabs ?? [])
           jumpTo(prof.idx)
         }
         setChar({ name: e.name, level: e.level, cls: e.cls })
@@ -282,7 +282,7 @@ export default function App() {
             charRef.current = save('last-char', '')
             setOwned({})
             setTrials(0)
-            setHiddenTrials([])
+            setHiddenLabs([])
             setChar(null)
           }
         }
@@ -320,10 +320,11 @@ export default function App() {
 
   const cur = shownVisits[Math.min(idx, visits.length - 1)]
 
-  // standing banners (like due gems) so labs can happen at natural stopping points
-  const trialsDue = useMemo(
-    () => dueTrials(visits, idx, trials, hiddenTrials),
-    [visits, trials, idx, hiddenTrials]
+  // standing banners (like due gems) so labs can happen at natural stopping points;
+  // off league start the trials were done by an earlier character
+  const labsDue = useMemo(
+    () => dueLabs(cur.act, leagueStart ? trials : 12, hiddenLabs),
+    [cur.act, leagueStart, trials, hiddenLabs]
   )
 
   useEffect(() => {
@@ -456,8 +457,8 @@ export default function App() {
     setIdx: jumpTo,
     cur,
     due,
-    trialsDue,
-    hideTrial,
+    labsDue,
+    hideLab,
     plan,
     owned,
     toggleOwned,
@@ -626,7 +627,7 @@ export default function App() {
                   checked={miniDue}
                   onChange={(e) => setMiniDue(save('mini-due', e.target.checked))}
                 />
-                Mini reminders — show gem and trial banners in the mini window
+                Mini reminders — show gem and lab banners in the mini window
               </label>
             </section>
             <section className="settings-section">

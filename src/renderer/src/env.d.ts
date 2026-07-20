@@ -8,7 +8,7 @@ type LogEvent =
   | { type: 'slain'; name: string }
   | { type: 'trial' }
 
-type MiniAction = { kind: 'toggle-owned'; gemId: string } | { kind: 'hide-trial'; ordinal: number }
+type MiniAction = { kind: 'toggle-owned'; gemId: string } | { kind: 'hide-lab'; lab: number }
 
 interface Window {
   api: {

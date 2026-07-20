@@ -2,19 +2,19 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { dueTrials, parseRoute, advance, advanceById, tickTrials } from '../src/renderer/src/route.ts'
+import { dueLabs, parseRoute, advance, advanceById, tickTrials } from '../src/renderer/src/route.ts'
 
-test('tickTrials and dueTrials: progress, dismissal, completion', () => {
+test('tickTrials and dueLabs: progress, unlock, dismissal', () => {
   const v = parseRoute(['Complete {trial}\n➞ {enter|1_1_2} #The Coast\nComplete {trial}\n'], new Set())
-  // two trials: first in Twilight Strand (visit 0), second in The Coast (visit 1)
-  assert.deepEqual(dueTrials(v, 0, 0, []).map((t) => t.ordinal), [1]) // second zone not reached
-  assert.deepEqual(dueTrials(v, 1, 0, []).map((t) => t.ordinal), [1, 2])
-  assert.deepEqual(dueTrials(v, 1, 1, []).map((t) => t.ordinal), [2]) // one completed
-  assert.deepEqual(dueTrials(v, 1, 0, [1]).map((t) => t.ordinal), [2]) // one dismissed
   const ticked = tickTrials(v[0], 1)
   assert.equal(ticked.steps[0].done, true)
   assert.ok(ticked.steps[0].text.endsWith('(1/6)'))
   assert.equal(tickTrials(v[1], 1).steps[0].done, false)
+  assert.deepEqual(dueLabs(3, 5, []), []) // not enough trials yet
+  assert.deepEqual(dueLabs(3, 6, []).map((l) => l.name), ['Normal'])
+  assert.deepEqual(dueLabs(7, 9, []).map((l) => l.lab), [1, 2])
+  assert.deepEqual(dueLabs(10, 12, [1, 2]).map((l) => l.name), ['Merciless']) // earlier labs done
+  assert.deepEqual(dueLabs(1, 12, []), []) // alt with pre-done trials: act-gated, not all at once
 })
 
 const SAMPLE = `#section Act 1
@@ -180,11 +180,8 @@ test('real route files parse clean', () => {
   const trialOrds = v.flatMap((x) => x.steps).filter((s) => s.trial).map((s) => s.trial)
   assert.deepEqual(trialOrds, Array.from({ length: 12 }, (_, i) => i + 1))
 
-  // act 10's comment-less {waypoint|Labyrinth_Airlock} must still create a visit
-  assert.ok(
-    v.some((x) => x.areaId === 'Labyrinth_Airlock' && x.zone === "Aspirants' Plaza"),
-    'Labyrinth_Airlock visit missing'
-  )
+  // labs are reminder banners, not route steps: no lab detour in the bundled route
+  assert.ok(!v.some((x) => x.areaId === 'Labyrinth_Airlock'), 'lab detour left in route')
 
   // LIBRARY gates the Act 3 Library detour and its a3q12 hand-in (Siosa's gems)
   assert.ok(!v.some((x) => x.areaId === '1_3_17_1'), 'Library visited without LIBRARY flag')

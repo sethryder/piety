@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { banditFlags, levelingSet, type PobBuild } from '../../shared/pob'
 import { activeRouteTexts, buildRoute } from './routeData'
-import { dueTrials, tickTrials } from './route'
+import { dueLabs, tickTrials } from './route'
 import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
 import { fmt, type Run } from './pace'
@@ -23,7 +23,7 @@ export default function MiniApp() {
   const [build, setBuild] = useState<PobBuild | null>(() => load('pob-build', null))
   const [owned, setOwned] = useState<Record<string, boolean>>(() => loadProfile().owned)
   const [trials, setTrials] = useState(() => loadProfile().trials ?? 0)
-  const [hiddenTrials, setHiddenTrials] = useState<number[]>(() => loadProfile().hiddenTrials ?? [])
+  const [hiddenLabs, setHiddenLabs] = useState<number[]>(() => loadProfile().hiddenLabs ?? [])
   const [leagueStart, setLeagueStart] = useState<boolean>(() => load('league-start', true))
   const [library, setLibrary] = useState<boolean>(() => load('library', true))
   const [banditOverride, setBanditOverride] = useState<string | null>(() =>
@@ -50,7 +50,7 @@ export default function MiniApp() {
       setBuild(load('pob-build', null))
       setOwned(loadProfile().owned)
       setTrials(loadProfile().trials ?? 0)
-      setHiddenTrials(loadProfile().hiddenTrials ?? [])
+      setHiddenLabs(loadProfile().hiddenLabs ?? [])
       setLeagueStart(load('league-start', true))
       setLibrary(load('library', true))
       setBanditOverride(load('bandit-override', null))
@@ -116,7 +116,7 @@ export default function MiniApp() {
 
   const cur = tickTrials(visits[Math.min(idx, visits.length - 1)], trials)
   const due = plan.filter((g) => !g.granted && g.visitIdx <= idx && !owned[g.gemId])
-  const trialsDue = dueTrials(visits, idx, trials, hiddenTrials)
+  const labsDue = dueLabs(cur.act, leagueStart ? trials : 12, hiddenLabs)
   const next = visits[idx + 1]
   const elapsed = run ? (run.total ?? (pausedSince ?? now) - run.start) : null
 
@@ -151,7 +151,7 @@ export default function MiniApp() {
     for (const el of body.querySelectorAll('*')) ro.observe(el)
     report()
     return () => ro.disconnect()
-  }, [autoFit, showMap, showDue, cur, due.length, trialsDue.length, next])
+  }, [autoFit, showMap, showDue, cur, due.length, labsDue.length, next])
 
   function step(d: number) {
     const ni = Math.min(Math.max(idx + d, 0), visits.length - 1)
@@ -228,12 +228,12 @@ export default function MiniApp() {
               <ZoneLayout areaId={cur.areaId} />
             </div>
           )}
-          {showDue && (due.length > 0 || trialsDue.length > 0) && (
+          {showDue && (due.length > 0 || labsDue.length > 0) && (
             <div className="mini-due">
-              {trialsDue.map((t) => (
-                <button key={`t${t.ordinal}`} className="gem-banner mini-banner" title="Hide this reminder" onClick={() => window.api.sendMiniAction({ kind: 'hide-trial', ordinal: t.ordinal })}>
-                  <span className="tag tag-TRIAL">TRIAL</span>
-                  <b>Trial of Ascendancy</b>&nbsp;— {t.zone} · {t.ordinal}/{t.need} before lab
+              {labsDue.map((l) => (
+                <button key={`l${l.lab}`} className="gem-banner mini-banner" title="Mark done" onClick={() => window.api.sendMiniAction({ kind: 'hide-lab', lab: l.lab })}>
+                  <span className="tag tag-TRIAL">LAB</span>
+                  <b>{l.name} Labyrinth</b>&nbsp;— {l.need}/{l.need} trials, ascend from Aspirants&apos; Plaza
                   <span className="banner-x">✕</span>
                 </button>
               ))}

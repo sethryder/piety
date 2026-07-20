@@ -2,9 +2,11 @@
 
 Piety is a desktop companion for leveling through the Path of Exile campaign. It reads your `Client.txt` log to follow you zone by zone, shows the next steps from a proven leveling route, tells you which gems to buy and when, tracks your passive tree progression against your Path of Building specs, and times your act splits against your personal best.
 
-It is built for a second monitor. Not an in-game overlay, just a normal window you can snap wherever you want, plus an optional small always-on-top window for single monitor setups.
+The main window is built for a second monitor: a normal window you can snap wherever you want. For single monitor setups there is a compact overlay, a small always-on-top window that sits over the game without hooking into it.
 
 ![Piety main window](assets/screenshot.png)
+
+![Piety companion window](assets/screenshot-2.png)
 
 ## Features
 

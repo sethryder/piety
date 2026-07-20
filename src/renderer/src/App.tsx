@@ -543,8 +543,12 @@ export default function App() {
             </button>
           )}
         </div>
-        <button className="import-btn" onClick={() => window.api.toggleMini()}>
-          MINI
+        <button
+          className="import-btn"
+          title="Toggle the always-on-top overlay window"
+          onClick={() => window.api.toggleMini()}
+        >
+          OVERLAY
         </button>
         <button className="import-btn" onClick={() => setWizardOpen(true)}>
           {build ? `${build.className} · ${build.ascendancy}` : 'SETUP'}
@@ -619,7 +623,7 @@ export default function App() {
                   checked={miniAutoFit}
                   onChange={(e) => setMiniAutoFit(save('mini-autofit', e.target.checked))}
                 />
-                Mini auto-height — the mini window resizes to fit each step
+                Overlay auto-height — the overlay window resizes to fit each step
               </label>
               <label className="settings-row">
                 <input
@@ -627,7 +631,7 @@ export default function App() {
                   checked={miniDue}
                   onChange={(e) => setMiniDue(save('mini-due', e.target.checked))}
                 />
-                Mini reminders — show gem and lab banners in the mini window
+                Overlay reminders — show gem and lab banners in the overlay window
               </label>
             </section>
             <section className="settings-section">

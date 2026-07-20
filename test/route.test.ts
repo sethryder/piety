@@ -195,3 +195,9 @@ test('real route files parse clean', () => {
     'a3q12 hand-in missing with LIBRARY flag'
   )
 })
+
+test('quest_text jammed against a count gets its space restored', () => {
+  const v = parseRoute(['Find 3x{quest_text|Glyph}\nFind {quest_text|Allflame}'], new Set())
+  assert.equal(v[0].steps[0].text, 'Find 3x Glyph')
+  assert.equal(v[0].steps[1].text, 'Find Allflame')
+})

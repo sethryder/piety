@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { banditFlags, levelingSet, type PobBuild } from '../../shared/pob'
 import { buildRoute } from './routeData'
-import { dueTrials } from './route'
+import { dueTrials, tickTrials } from './route'
 import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
 import { fmt, type Run } from './pace'
@@ -105,7 +105,7 @@ export default function MiniApp() {
     return planGems(set.groups.flatMap((g) => g.gems), build.className, visits, gemDb)
   }, [build, visits])
 
-  const cur = visits[Math.min(idx, visits.length - 1)]
+  const cur = tickTrials(visits[Math.min(idx, visits.length - 1)], trials)
   const due = plan.filter((g) => !g.granted && g.visitIdx <= idx && !owned[g.gemId])
   const trialsDue = dueTrials(visits, idx, trials, hiddenTrials)
   const next = visits[idx + 1]

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { banditFlags, classMatches, type PobBuild } from '../../shared/pob'
 import { activeSpecIdx, autoAssign, treeDelta } from '../../shared/trees'
-import { advance, advanceById, dueTrials, labNeed } from './route'
+import { advance, advanceById, dueTrials, tickTrials } from './route'
 import { buildRoute } from './routeData'
 import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
@@ -101,13 +101,17 @@ export default function App() {
       }),
     []
   )
+  const hideTrial = (ordinal: number) =>
+    setHiddenTrials((h) => (h.includes(ordinal) ? h : [...h, ordinal]))
+
   // apply banner actions clicked in the mini; persistence echoes back to it
   useEffect(
     () =>
       window.api.onMiniAction((a) => {
         if (a.kind === 'toggle-owned') setOwned((o) => ({ ...o, [a.gemId]: !o[a.gemId] }))
-        else if (a.kind === 'hide-trial') setHiddenTrials((h) => [...h, a.ordinal])
+        else if (a.kind === 'hide-trial') hideTrial(a.ordinal)
       }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   )
 
@@ -303,18 +307,7 @@ export default function App() {
   }, [run])
 
   // tick completed trials and show progress toward the next lab (6/9/12 trials)
-  const shownVisits = useMemo(
-    () =>
-      visits.map((v) => ({
-        ...v,
-        steps: v.steps.map((s) => {
-          if (!s.trial) return s
-          const need = labNeed(s.trial)
-          return { ...s, done: s.trial <= trials, text: `${s.text} (${Math.min(trials, need)}/${need})` }
-        })
-      })),
-    [visits, trials]
-  )
+  const shownVisits = useMemo(() => visits.map((v) => tickTrials(v, trials)), [visits, trials])
 
   const cur = shownVisits[Math.min(idx, visits.length - 1)]
 
@@ -455,7 +448,7 @@ export default function App() {
     cur,
     due,
     trialsDue,
-    hideTrial: (ordinal: number) => setHiddenTrials((h) => [...h, ordinal]),
+    hideTrial,
     plan,
     owned,
     toggleOwned,

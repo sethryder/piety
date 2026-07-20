@@ -10,6 +10,16 @@ export type TrialDue = { ordinal: number; zone: string; visitIdx: number; need: 
 // cumulative trials gating each lab: 6 normal, 9 cruel, 12 merciless
 export const labNeed = (ord: number): number => (ord <= 6 ? 6 : ord <= 9 ? 9 : 12)
 
+// tick a visit's completed trial steps and append (n/need) lab progress
+export const tickTrials = (v: ZoneVisit, done: number): ZoneVisit => ({
+  ...v,
+  steps: v.steps.map((s) => {
+    if (!s.trial) return s
+    const need = labNeed(s.trial)
+    return { ...s, done: s.trial <= done, text: `${s.text} (${Math.min(done, need)}/${need})` }
+  })
+})
+
 // trials whose zone the route has already passed but the log hasn't completed,
 // minus any the user dismissed
 export function dueTrials(visits: ZoneVisit[], idx: number, done: number, hidden: number[]): TrialDue[] {

@@ -3,7 +3,7 @@
 // brand-new character that hasn't been named by its first level-up yet.
 // ponytail: build/tree config stays global; make it per-profile if juggling
 // different builds across characters bites
-export type Profile = { owned: Record<string, boolean>; idx: number }
+export type Profile = { owned: Record<string, boolean>; idx: number; trials?: number; hiddenTrials?: number[] }
 
 function read<T>(key: string, fallback: T): T {
   try {

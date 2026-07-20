@@ -163,6 +163,10 @@ test('real route files parse clean', () => {
   }
   assert.equal(v[0].zone, 'The Twilight Strand')
   assert.equal(v.at(-1)!.act, 10)
+  // trial steps carry sequential ordinals: 6 before normal lab, 9 before cruel, 12 total
+  const trialOrds = v.flatMap((x) => x.steps).filter((s) => s.trial).map((s) => s.trial)
+  assert.deepEqual(trialOrds, Array.from({ length: 12 }, (_, i) => i + 1))
+
   // act 10's comment-less {waypoint|Labyrinth_Airlock} must still create a visit
   assert.ok(
     v.some((x) => x.areaId === 'Labyrinth_Airlock' && x.zone === "Aspirants' Plaza"),

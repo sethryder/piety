@@ -24,6 +24,7 @@ test('parseLine', () => {
     type: 'slain',
     name: 'Snorri'
   })
+  assert.deepEqual(parseLine(`${STAMP} : Trial Completed`), { type: 'trial' })
   assert.equal(parseLine(`${STAMP} : Some chat message.`), null)
   assert.deepEqual(
     parseLine('2026/07/19 12:00:01 123 abc [DEBUG Client 1] Generating level 12 area "1_1_11_1" with seed 469718509'),

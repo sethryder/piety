@@ -6,6 +6,9 @@ type LogEvent =
   | { type: 'gen'; areaId: string; areaLevel: number; seed: number }
   | { type: 'level'; name: string; cls: string; level: number }
   | { type: 'slain'; name: string }
+  | { type: 'trial' }
+
+type MiniAction = { kind: 'toggle-owned'; gemId: string } | { kind: 'hide-trial'; ordinal: number }
 
 interface Window {
   api: {
@@ -34,5 +37,7 @@ interface Window {
     fitMiniHeight: (h: number) => void
     syncIdx: (idx: number) => void
     onIdxSync: (cb: (idx: number) => void) => () => void
+    sendMiniAction: (a: MiniAction) => void
+    onMiniAction: (cb: (a: MiniAction) => void) => () => void
   }
 }

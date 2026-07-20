@@ -1150,6 +1150,36 @@ body {
   border: 1px solid var(--border-card);
   border-radius: 10px;
   padding: 16px 20px;
+  container-type: inline-size;
+}
+
+.zone-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* wide card: steps left, layout image beside them */
+@container (min-width: 640px) {
+  .zone-card-body {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .zone-card-body .steps {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .zone-card-body .zone-layout {
+    flex: 0 0 40%;
+    margin: 0;
+  }
+
+  .zone-card-body .zone-layout img {
+    max-height: 300px;
+  }
 }
 
 .zone-card h1 {

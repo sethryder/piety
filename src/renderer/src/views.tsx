@@ -152,12 +152,14 @@ export function MixedView(p: ViewProps) {
       <section className="zone-card">
         <span className="micro-label">NOW IN</span>
         <h1>{p.cur.zone}</h1>
-        <ZoneLayout areaId={p.cur.areaId} />
-        <ul className="steps">
-          {p.cur.steps.map((s, i) => (
-            <StepLine key={i} s={s} />
-          ))}
-        </ul>
+        <div className="zone-card-body">
+          <ul className="steps">
+            {p.cur.steps.map((s, i) => (
+              <StepLine key={i} s={s} />
+            ))}
+          </ul>
+          <ZoneLayout areaId={p.cur.areaId} />
+        </div>
       </section>
       <DueBanners due={p.due} toggleOwned={p.toggleOwned} />
       <section className="up-next scroll">

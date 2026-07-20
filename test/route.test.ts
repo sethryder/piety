@@ -170,8 +170,13 @@ test('real route files parse clean', () => {
     assert.ok(visit.zone.length > 0)
     assert.ok(visit.act >= 1 && visit.act <= 10)
     for (const s of visit.steps) {
-      assert.ok(!s.text.includes('{'), `unparsed fragment in: ${s.text}`)
-      assert.ok(!s.text.includes('#'), `unstripped comment in: ${s.text}`)
+      for (const t of [s.text, ...s.hints]) {
+        assert.ok(!t.includes('{'), `unparsed fragment in: ${t}`)
+        assert.ok(!t.includes('#'), `unstripped comment in: ${t}`)
+        assert.ok(!/\ba\d+q\d+\b/.test(t), `raw quest id leaked into: ${t}`)
+        assert.ok(!/\b\d_\d+_\w+/.test(t), `raw area id leaked into: ${t}`)
+      }
+      s.quests?.forEach((q) => assert.doesNotMatch(q, /\|/, `piped quest id ${q}`))
     }
   }
   assert.equal(v[0].zone, 'The Twilight Strand')
@@ -202,4 +207,9 @@ test('quest_text jammed against a count gets its space restored', () => {
 test('two quest fragments on one line yield one QUEST tag', () => {
   const v = parseRoute(['Find {quest_text|Slave Girl}, take {quest_text|Allflame}'], new Set())
   assert.deepEqual(v[0].steps[0].tags, ['QUEST'])
+})
+
+test('{area|id} renders the line comment, not the raw id', () => {
+  const v = parseRoute(['Find {area|1_2_2a}, place {portal|set} #The Den'], new Set())
+  assert.equal(v[0].steps[0].text, 'Find The Den, place portal')
 })

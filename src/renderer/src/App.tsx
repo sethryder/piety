@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { banditFlags, type PobBuild } from '../../shared/pob'
+import { banditFlags, classMatches, type PobBuild } from '../../shared/pob'
 import { activeSpecIdx, autoAssign, treeDelta } from '../../shared/trees'
 import { advance, advanceById } from './route'
 import { buildRoute } from './routeData'
@@ -36,7 +36,7 @@ export default function App() {
   // short window (e.g. FancyZones band on a portrait monitor) forces the compact band layout
   const [shortWindow, setShortWindow] = useState(() => window.innerHeight < 520)
   const [idx, setIdx] = useState(() => loadProfile().idx)
-  const [char, setChar] = useState<{ name: string; level: number } | null>(null)
+  const [char, setChar] = useState<{ name: string; level: number; cls: string } | null>(null)
   const [areaLevel, setAreaLevel] = useState<number | null>(null)
   const [logLines, setLogLines] = useState<string[]>([])
   const [logPath, setLogPath] = useState<string | null>(null)
@@ -218,7 +218,7 @@ export default function App() {
           setOwned(prof.owned)
           jumpTo(prof.idx)
         }
-        setChar({ name: e.name, level: e.level })
+        setChar({ name: e.name, level: e.level, cls: e.cls })
       } else if (e.type === 'slain') {
         // only our character's deaths count; the line also fires for party members
         const r = runRef.current
@@ -443,6 +443,14 @@ export default function App() {
         <span className="char">
           {char ? `${char.name} · Lv ${char.level}` : 'No character'}
         </span>
+        {char && build && !classMatches(char.cls, build) && (
+          <span
+            className="act-chip class-warn"
+            title={`This character is a ${char.cls}, but the imported PoB build is for a ${build.className}.`}
+          >
+            ⚠ {build.className.toUpperCase()} BUILD
+          </span>
+        )}
         <span className="act-chip">ACT {cur.act}</span>
         <LevelChip
           charLv={char?.level ?? null}

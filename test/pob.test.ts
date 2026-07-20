@@ -3,7 +3,15 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { decodePobCode, pobbInId } from '../src/main/pob.ts'
-import { banditFlags, levelingSet, parsePob } from '../src/shared/pob.ts'
+import { banditFlags, classMatches, levelingSet, parsePob } from '../src/shared/pob.ts'
+
+test('classMatches: base class, ascendancy, unparsed build', () => {
+  const b = { className: 'Witch', ascendancy: 'Necromancer' }
+  assert.equal(classMatches('Witch', b), true)
+  assert.equal(classMatches('Necromancer', b), true) // ascended char still matches
+  assert.equal(classMatches('Marauder', b), false)
+  assert.equal(classMatches('Marauder', { className: '', ascendancy: '' }), true) // no class in PoB: never warn
+})
 
 test('decodes and parses a real pobb.in export', () => {
   const code = readFileSync(join(import.meta.dirname, 'fixtures/pob-code.txt'), 'utf8')

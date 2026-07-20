@@ -1654,6 +1654,10 @@ button.pace-chip:hover {
   color: var(--text-secondary);
 }
 
+.class-warn {
+  color: var(--negative);
+}
+
 .lvl-chip.over {
   color: var(--accent);
 }

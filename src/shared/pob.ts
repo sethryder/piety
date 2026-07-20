@@ -13,6 +13,10 @@ export type PobBuild = {
   specs: TreeSpec[]
 }
 
+// the level-up log line carries the base class, or the ascendancy name once ascended
+export const classMatches = (cls: string, b: Pick<PobBuild, 'className' | 'ascendancy'>) =>
+  b.className === '' || cls === b.className || cls === b.ascendancy
+
 const stripColors = (s: string) => s.replace(/\^x[0-9a-fA-F]{6}|\^\d/g, '')
 
 const unescapeXml = (s: string) =>

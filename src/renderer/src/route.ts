@@ -37,6 +37,10 @@ export const dueLabs = (act: number, trials: number, hidden: number[]): LabDue[]
 const FRAG_RE = /\{([a-z_]+)(?:\|([^}]*))?\}/g
 // destinations referenced by id without a #comment in the route files
 const ID_NAMES: Record<string, string> = { Labyrinth_Airlock: "Aspirants' Plaza" }
+// quests referenced by id with no #comment on the line; names live in
+// data/quests.json but importing it here would tie the parser to the gem db.
+// ponytail: two entries; the real-files test fails loudly if upstream adds more
+const QUEST_NAMES: Record<string, string> = { a9q3: 'The Storm Blade', a9q5: 'Queen of the Sands' }
 // ponytail: assumes {dir|deg} is 0°=north clockwise; fix mapping if arrows look wrong in-game
 const ARROWS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖']
 
@@ -117,10 +121,14 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
             case 'waypoint_get':
               tags.push('WP')
               return 'waypoint'
-            case 'quest':
+            case 'quest': {
+              // upstream allows {quest|questId|rewardOfferId}; only the quest
+              // id matters here, and gemPlan matches quests by that bare id
               tags.push('QUEST')
-              questIds.push(arg)
-              return comment ?? arg
+              const qid = arg.split('|')[0]
+              questIds.push(qid)
+              return comment ?? QUEST_NAMES[qid] ?? qid
+            }
             case 'quest_text':
               tags.push('QUEST')
               // upstream renders this fragment as a styled chunk, so
@@ -158,6 +166,8 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
             case 'crafting':
               tags.push('FIND')
               return 'crafting recipe'
+            case 'area':
+              return comment ?? ID_NAMES[arg] ?? arg
             case 'dir':
               return ARROWS[Math.round(Number(arg) / 45) % 8] ?? arg
             default:

@@ -50,12 +50,21 @@ export default function App() {
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   const [wizardOpen, setWizardOpen] = useState(() => load<PobBuild | null>('pob-build', null) === null)
   const [paceOpen, setPaceOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [appVersion, setAppVersion] = useState('')
+  const [beta, setBeta] = useState(false)
+  const [updateMsg, setUpdateMsg] = useState<string | null>(null)
+  const [checking, setChecking] = useState(false)
   const [pobSource, setPobSource] = useState<string | null>(() => load('pob-source', null))
 
   useEffect(() => window.api.onUpdateReady(setUpdateVersion), [])
 
   useEffect(() => {
-    window.api.initState().then(({ logPath }) => setLogPath(logPath))
+    window.api.initState().then((s) => {
+      setLogPath(s.logPath)
+      setAppVersion(s.version)
+      setBeta(s.allowPrerelease)
+    })
   }, [])
 
   // keep the mini overlay window on the same route position
@@ -240,6 +249,22 @@ export default function App() {
     setRun(save('pace-run', null))
   }
 
+  async function checkUpdates() {
+    setChecking(true)
+    setUpdateMsg(null)
+    const r = await window.api.checkUpdates()
+    setChecking(false)
+    setUpdateMsg(
+      r === null
+        ? 'Update checks only work in the installed app.'
+        : r.latest === null
+          ? 'Update check failed — offline or no releases.'
+          : r.latest === r.current
+            ? `Up to date (v${r.current}).`
+            : `v${r.latest} found — downloading, restart prompt appears in the footer when ready.`
+    )
+  }
+
   function finishWizard(r: WizardResult) {
     setBuild(save('pob-build', r.build))
     setTreeAssign(save('tree-assign', r.treeAssign))
@@ -326,6 +351,9 @@ export default function App() {
         <button className="import-btn" onClick={() => setWizardOpen(true)}>
           {build ? `${build.className} · ${build.ascendancy}` : 'SETUP'}
         </button>
+        <button className="import-btn" title="Settings" onClick={() => setSettingsOpen((o) => !o)}>
+          ⚙
+        </button>
       </header>
 
       <main className="main">
@@ -344,6 +372,46 @@ export default function App() {
             onClose={() => setWizardOpen(false)}
             onFinish={finishWizard}
           />
+        ) : settingsOpen ? (
+          <div className="pace-full settings">
+            <div className="pace-full-head">
+              <span className="micro-label">SETTINGS</span>
+              <span className="spacer" />
+              <button className="import-btn" onClick={() => setSettingsOpen(false)}>
+                CLOSE
+              </button>
+            </div>
+            <section className="settings-section">
+              <span className="micro-label">UPDATES</span>
+              <label className="settings-row">
+                <input
+                  type="checkbox"
+                  checked={beta}
+                  onChange={(e) => {
+                    setBeta(e.target.checked)
+                    window.api.setPrerelease(e.target.checked)
+                  }}
+                />
+                Beta updates — install pre-release versions
+              </label>
+              <button className="import-btn" onClick={checkUpdates} disabled={checking}>
+                {checking ? 'CHECKING…' : 'CHECK FOR UPDATES'}
+              </button>
+              {updateMsg && <div className="hint">{updateMsg}</div>}
+            </section>
+            <section className="settings-section">
+              <span className="micro-label">ABOUT</span>
+              <p>
+                Piety {appVersion && `v${appVersion}`} — a Path of Exile campaign leveling
+                companion.
+              </p>
+              <p>
+                <a href="https://github.com/sethryder/piety" target="_blank" rel="noreferrer">
+                  github.com/sethryder/piety
+                </a>
+              </p>
+            </section>
+          </div>
         ) : paceOpen ? (
           <div className="pace-full">
             <div className="pace-full-head">

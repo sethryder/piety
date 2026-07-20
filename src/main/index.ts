@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -9,7 +9,11 @@ import { parsePob } from '../shared/pob'
 
 const configPath = () => join(app.getPath('userData'), 'config.json')
 
-function loadConfig(): { clientTxt?: string; miniBounds?: Electron.Rectangle } {
+function loadConfig(): {
+  clientTxt?: string
+  miniBounds?: Electron.Rectangle
+  allowPrerelease?: boolean
+} {
   try {
     return JSON.parse(readFileSync(configPath(), 'utf8'))
   } catch {
@@ -86,7 +90,29 @@ ipcMain.on('watch-build', (_e, path: string | null) => {
 
 // renderers pull initial state on mount: the did-finish-load pushes can race
 // listener registration in the page
-ipcMain.handle('init-state', () => ({ logPath: currentLogPath, idx: lastIdx }))
+ipcMain.handle('init-state', () => ({
+  logPath: currentLogPath,
+  idx: lastIdx,
+  version: app.getVersion(),
+  allowPrerelease: !!loadConfig().allowPrerelease
+}))
+
+ipcMain.on('set-prerelease', (_e, v: boolean) => {
+  patchConfig({ allowPrerelease: v })
+  autoUpdater.allowPrerelease = v
+  // opting into beta should surface a waiting pre-release right away
+  if (v && app.isPackaged) autoUpdater.checkForUpdates().catch(() => {})
+})
+
+ipcMain.handle('check-updates', async () => {
+  if (!app.isPackaged) return null
+  try {
+    const r = await autoUpdater.checkForUpdates()
+    return { current: app.getVersion(), latest: r?.updateInfo.version ?? null }
+  } catch {
+    return { current: app.getVersion(), latest: null }
+  }
+})
 
 // main window is the position authority; relay its idx to other windows
 ipcMain.on('sync-idx', (e, idx: number) => {
@@ -146,6 +172,10 @@ function createWindow(): void {
 
   win.once('ready-to-show', () => win.show())
   win.on('closed', () => mini?.close())
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url)
+    return { action: 'deny' }
+  })
 
   const logPath = () => {
     const saved = loadConfig().clientTxt
@@ -176,6 +206,7 @@ function createWindow(): void {
   }
 
   if (app.isPackaged) {
+    autoUpdater.allowPrerelease = !!loadConfig().allowPrerelease
     autoUpdater.on('update-downloaded', (info) => {
       win.webContents.send('update-ready', info.version)
     })

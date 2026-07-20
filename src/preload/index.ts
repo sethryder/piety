@@ -15,8 +15,15 @@ contextBridge.exposeInMainWorld('api', {
   watchBuild: (path: string | null) => ipcRenderer.send('watch-build', path),
   onBuildUpdated: (cb: (b: PobBuild) => void) => on('build-updated', cb),
   pickLog: (): Promise<string | null> => ipcRenderer.invoke('pick-log'),
-  initState: (): Promise<{ logPath: string | null; idx: number }> =>
-    ipcRenderer.invoke('init-state'),
+  initState: (): Promise<{
+    logPath: string | null
+    idx: number
+    version: string
+    allowPrerelease: boolean
+  }> => ipcRenderer.invoke('init-state'),
+  setPrerelease: (v: boolean) => ipcRenderer.send('set-prerelease', v),
+  checkUpdates: (): Promise<{ current: string; latest: string | null } | null> =>
+    ipcRenderer.invoke('check-updates'),
   onLog: (cb: (e: LogEvent) => void) => on('log-event', cb),
   onLogStatus: (cb: (path: string | null) => void) => on('log-status', cb),
   onUpdateReady: (cb: (version: string) => void) => on('update-ready', cb),

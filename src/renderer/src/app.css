@@ -569,6 +569,26 @@ button.pace-chip:hover {
   align-items: center;
 }
 
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 480px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.settings a {
+  color: var(--accent);
+}
+
 .update-chip {
   background: none;
   border: 1px solid var(--accent);

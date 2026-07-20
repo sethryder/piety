@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, screen, shell } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { exec } from 'node:child_process'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
@@ -177,6 +177,16 @@ function toggleMini(): void {
 ipcMain.on('toggle-mini', toggleMini)
 // locked mini = fully frozen geometry: dragging is blocked in CSS, resizing here
 ipcMain.on('mini-lock', (_e, locked: boolean) => mini?.setResizable(!locked))
+
+// content-driven height: grow down from the pinned top edge, clamp to the
+// screen so the body's own scroll remains the fallback for oversized steps
+ipcMain.on('mini-fit-height', (_e, h: number) => {
+  if (!mini) return
+  const b = mini.getBounds()
+  const wa = screen.getDisplayMatching(b).workArea
+  const target = Math.max(180, Math.min(Math.round(h), wa.y + wa.height - b.y))
+  if (Math.abs(target - b.height) > 2) mini.setBounds({ ...b, height: target })
+})
 
 function createWindow(): void {
   const win = new BrowserWindow({

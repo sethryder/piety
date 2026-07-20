@@ -166,7 +166,7 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
         })
         .trim()
 
-      lastStep = { text, tags, hints: [] }
+      lastStep = { text, tags: [...new Set(tags)], hints: [] }
       if (questIds.length) lastStep.quests = questIds
       if (stepTrial) lastStep.trial = stepTrial
       cur.steps.push(lastStep)

@@ -84,6 +84,10 @@ ipcMain.on('watch-build', (_e, path: string | null) => {
   watchTimer = setInterval(check, 3000)
 })
 
+// renderers pull initial state on mount: the did-finish-load pushes can race
+// listener registration in the page
+ipcMain.handle('init-state', () => ({ logPath: currentLogPath, idx: lastIdx }))
+
 // main window is the position authority; relay its idx to other windows
 ipcMain.on('sync-idx', (e, idx: number) => {
   lastIdx = idx

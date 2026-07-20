@@ -53,6 +53,10 @@ export default function App() {
 
   useEffect(() => window.api.onUpdateReady(setUpdateVersion), [])
 
+  useEffect(() => {
+    window.api.initState().then(({ logPath }) => setLogPath(logPath))
+  }, [])
+
   // keep the mini overlay window on the same route position
   useEffect(() => window.api.syncIdx(idx), [idx])
 
@@ -90,6 +94,22 @@ export default function App() {
   const idxRef = useRef(idx)
   const runRef = useRef(run)
 
+  // manual zone jumps must update the ref too, or the next log event advances
+  // from a stale position
+  function jumpTo(i: number) {
+    idxRef.current = i
+    setIdx(i)
+  }
+
+  // route options changed (league start / bandit): the visits array may have
+  // shrunk, so clamp the tracked position
+  useEffect(() => {
+    if (idxRef.current >= visits.length) {
+      idxRef.current = visits.length - 1
+      setIdx(visits.length - 1)
+    }
+  }, [visits])
+
   useEffect(() => {
     const offStatus = window.api.onLogStatus(setLogPath)
     const offLog = window.api.onLog((e) => {
@@ -115,7 +135,9 @@ export default function App() {
         if (atStart) r = startRun(nowMs)
         if (r) {
           r = recordActEntry(r, visits[ni].act, nowMs)
-          if (ni === visits.length - 1 && r.total === null) {
+          // finishing requires having entered act 10 first: another character on
+          // the same client loading into Karui Shores must not fake a completion
+          if (ni === visits.length - 1 && r.total === null && r.splits[10] !== undefined) {
             r = finishRun(r, nowMs)
             setHistory((h) => save('pace-history', [...h, r!]))
           }
@@ -164,8 +186,25 @@ export default function App() {
   useEffect(
     () =>
       window.api.onBuildUpdated((b) => {
-        const old = new Map(buildRef.current?.specs.map((s, i) => [s.title, assignRef.current[i]]))
-        setTreeAssign(save('tree-assign', b.specs.map((s) => old.get(s.title) ?? autoAssign(s.title))))
+        // keep manual breakpoint picks: same index + same title first, then
+        // unique non-empty titles (rename/reorder); duplicates and untitled
+        // specs can't be title-matched, so they fall back to auto
+        const oldSpecs = buildRef.current?.specs ?? []
+        const oldAssign = assignRef.current
+        const titleCount = new Map<string, number>()
+        for (const s of oldSpecs) titleCount.set(s.title, (titleCount.get(s.title) ?? 0) + 1)
+        const byTitle = new Map<string, number | null>()
+        oldSpecs.forEach((s, i) => {
+          if (s.title && titleCount.get(s.title) === 1) byTitle.set(s.title, oldAssign[i])
+        })
+        const nextAssign = b.specs.map((s, i) =>
+          oldSpecs[i]?.title === s.title
+            ? (oldAssign[i] ?? autoAssign(s.title))
+            : byTitle.has(s.title)
+              ? byTitle.get(s.title)!
+              : autoAssign(s.title)
+        )
+        setTreeAssign(save('tree-assign', nextAssign))
         setBuild(save('pob-build', b))
       }),
     []
@@ -208,7 +247,7 @@ export default function App() {
   const viewProps: ViewProps = {
     visits,
     idx,
-    setIdx,
+    setIdx: jumpTo,
     cur,
     due,
     plan,

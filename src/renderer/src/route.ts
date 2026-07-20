@@ -5,6 +5,8 @@ export type Step = { text: string; tags: string[]; hints: string[]; quests?: str
 export type ZoneVisit = { zone: string; act: number; steps: Step[]; areaId: string }
 
 const FRAG_RE = /\{([a-z_]+)(?:\|([^}]*))?\}/g
+// destinations referenced by id without a #comment in the route files
+const ID_NAMES: Record<string, string> = { Labyrinth_Airlock: "Aspirants' Plaza" }
 // ponytail: assumes {dir|deg} is 0°=north clockwise; fix mapping if arrows look wrong in-game
 const ARROWS = ['↑', '↗', '→', '↘', '↓', '↙', '←', '↖']
 
@@ -71,13 +73,15 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
               move = comment ?? arg
               moveId = arg
               return comment ?? arg
-            case 'waypoint':
+            case 'waypoint': {
               tags.push('WP')
-              if (comment) {
-                move = comment
+              const dest = comment ?? ID_NAMES[arg]
+              if (dest) {
+                move = dest
                 moveId = arg
               }
-              return comment ?? arg
+              return dest ?? arg
+            }
             case 'waypoint_get':
               tags.push('WP')
               return 'waypoint'

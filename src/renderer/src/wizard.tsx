@@ -38,7 +38,10 @@ export function Wizard(props: {
   const [sourcePath, setSourcePath] = useState<string | null>(props.initial.sourcePath)
 
   useEffect(() => {
-    window.api.listPobBuilds().then(setBuildFiles)
+    window.api
+      .listPobBuilds()
+      .then(setBuildFiles)
+      .catch(() => setBuildFiles([]))
   }, [])
 
   const gates = [props.logPath !== null, parsed !== null, true, true, true]

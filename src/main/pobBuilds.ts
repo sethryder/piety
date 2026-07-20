@@ -17,11 +17,15 @@ export function listBuildFiles(dir: string, depth = 3, prefix = ''): BuildFile[]
     if (e.isDirectory() && depth > 0) {
       out.push(...listBuildFiles(p, depth - 1, `${prefix}${e.name}/`))
     } else if (e.isFile() && e.name.endsWith('.xml')) {
-      out.push({
-        name: prefix + e.name.replace(/\.xml$/, ''),
-        path: p,
-        mtime: statSync(p).mtimeMs
-      })
+      try {
+        out.push({
+          name: prefix + e.name.replace(/\.xml$/, ''),
+          path: p,
+          mtime: statSync(p).mtimeMs
+        })
+      } catch {
+        // deleted/renamed between readdir and stat (cloud sync does this): skip it
+      }
     }
   }
   return out.sort((a, b) => b.mtime - a.mtime)

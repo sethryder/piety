@@ -5,10 +5,12 @@
 // Sources: HeartofPhos/exile-leveling (routes, gems, quests, characters, and the
 // pinned GGG skilltree-export commit per tree version — we reuse their pin).
 import { readdirSync, unlinkSync, writeFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { sep } from 'node:path'
 
 const EL = 'https://raw.githubusercontent.com/HeartofPhos/exile-leveling/main'
-const routesDir = new URL('../src/renderer/src/routes/', import.meta.url).pathname
-const dataDir = new URL('../src/renderer/src/data/', import.meta.url).pathname
+const routesDir = fileURLToPath(new URL('../src/renderer/src/routes/', import.meta.url)) + sep
+const dataDir = fileURLToPath(new URL('../src/renderer/src/data/', import.meta.url)) + sep
 
 async function get(url) {
   const r = await fetch(url)

@@ -23,6 +23,9 @@ test('decodes and parses a real pobb.in export', () => {
   assert.equal(lvl?.title, 'Levelling As Absolution')
   assert.ok(lvl!.groups.length > 0)
   assert.ok(lvl!.groups.every((g) => g.gems.every((gem) => gem.name.length > 0)))
+  // self-closing separator rows must not swallow real groups' attributes
+  for (const set of build.skillSets)
+    for (const g of set.groups) assert.ok(!/=/.test(g.label), `separator leaked: ${g.label}`)
 })
 
 test('banditFlags maps PoB bandit to route flags', () => {

@@ -77,15 +77,16 @@ export function planGems(
       // empty classes array = offered to every class
       const forUs = (c?: { classes: string[] }) =>
         c !== undefined && (c.classes.length === 0 || c.classes.includes(className))
+      // a free quest reward beats a vendor purchase at the same quest
+      let reward: string | null = null
+      let vendor: string | null = null
       for (const offer of Object.values(quest.reward_offers)) {
-        const take = offer.quest?.[gemId]
-        const buy = offer.vendor?.[gemId]
-        if (forUs(take)) {
-          best = { pos, how: `Reward — ${offer.quest_npc ?? '?'}, after ${quest.name}` }
-        } else if (forUs(buy)) {
-          best = { pos, how: `Buy — ${buy!.npc ?? '?'}, after ${quest.name}` }
-        }
+        if (reward === null && forUs(offer.quest?.[gemId])) reward = offer.quest_npc ?? '?'
+        if (vendor === null && forUs(offer.vendor?.[gemId]))
+          vendor = offer.vendor![gemId].npc ?? '?'
       }
+      if (reward !== null) best = { pos, how: `Reward — ${reward}, after ${quest.name}` }
+      else if (vendor !== null) best = { pos, how: `Buy — ${vendor}, after ${quest.name}` }
     }
     out.push({
       gemId,

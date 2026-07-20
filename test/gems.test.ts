@@ -53,3 +53,36 @@ test('gem plan for the fixture build against the real route', () => {
   assert.ok(abs && Number.isFinite(abs.visitIdx), 'Absolution should be obtainable')
   assert.match(abs!.how, /after /)
 })
+
+test('quest reward beats vendor purchase at the same quest', () => {
+  const visits = parseRoute(
+    ['Hand in {quest|q1} #Some Quest\n➞ {enter|1_1_2} #The Coast\n'],
+    new Set()
+  )
+  const gemId = 'Metadata/Items/Gems/SkillGemTest'
+  const db = {
+    gems: {
+      [gemId]: { name: 'Test', primary_attribute: 'intelligence', required_level: 1, is_support: false }
+    },
+    colours: { intelligence: '#7aa7d9' },
+    characters: {},
+    // vendor offer iterates BEFORE the reward offer: reward must still win
+    quests: {
+      q1: {
+        name: 'Some Quest',
+        act: '1',
+        reward_offers: {
+          a: { vendor: { [gemId]: { classes: [], npc: 'Nessa' } } },
+          b: { quest_npc: 'Tarkleigh', quest: { [gemId]: { classes: ['Witch'] } } }
+        }
+      }
+    }
+  }
+  const plan = planGems(
+    [{ gemId, name: 'Test', level: 1, quality: 0, enabled: true }],
+    'Witch',
+    visits,
+    db as never
+  )
+  assert.match(plan[0].how, /^Reward — Tarkleigh/)
+})

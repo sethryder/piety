@@ -1,9 +1,11 @@
 // Vendor zone layout images from Lailloken/Exile-UI (MIT). Skips files already
 // present, so re-runs only fetch what's new. ~470 jpgs, run once per league-ish.
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { sep } from 'node:path'
 
 const BASE = 'https://raw.githubusercontent.com/Lailloken/Exile-UI/main/img/GUI/act-decoder'
-const outDir = new URL('../src/renderer/src/layouts/', import.meta.url).pathname
+const outDir = fileURLToPath(new URL('../src/renderer/src/layouts/', import.meta.url)) + sep
 mkdirSync(outDir, { recursive: true })
 
 const list = await (await fetch(`${BASE}/file-list.json`)).json()

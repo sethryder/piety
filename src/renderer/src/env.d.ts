@@ -14,6 +14,7 @@ interface Window {
     watchBuild: (path: string | null) => void
     onBuildUpdated: (cb: (b: import('../../shared/pob').PobBuild) => void) => () => void
     pickLog: () => Promise<string | null>
+    initState: () => Promise<{ logPath: string | null; idx: number }>
     onLog: (cb: (e: LogEvent) => void) => () => void
     onLogStatus: (cb: (path: string | null) => void) => () => void
     onUpdateReady: (cb: (version: string) => void) => () => void

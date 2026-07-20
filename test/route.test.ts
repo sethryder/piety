@@ -92,4 +92,9 @@ test('real route files parse clean', () => {
   }
   assert.equal(v[0].zone, 'The Twilight Strand')
   assert.equal(v.at(-1)!.act, 10)
+  // act 10's comment-less {waypoint|Labyrinth_Airlock} must still create a visit
+  assert.ok(
+    v.some((x) => x.areaId === 'Labyrinth_Airlock' && x.zone === "Aspirants' Plaza"),
+    'Labyrinth_Airlock visit missing'
+  )
 })

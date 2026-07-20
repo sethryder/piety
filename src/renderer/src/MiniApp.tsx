@@ -45,6 +45,7 @@ export default function MiniApp() {
   }, [])
 
   useEffect(() => {
+    window.api.initState().then((s) => setIdx(s.idx))
     const offIdx = window.api.onIdxSync(setIdx)
     const offLog = window.api.onLog((e) => {
       if (e.type === 'level') setChar({ name: e.name, level: e.level })

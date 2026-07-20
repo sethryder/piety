@@ -31,6 +31,9 @@ function attrs(tag: string): Record<string, string> {
 
 function parseSkills(block: string): SocketGroup[] {
   const groups: SocketGroup[] = []
+  // self-closing <Skill .../> rows are PoB's visual separators; drop them so the
+  // lazy match can't attribute the next real group's gems to a separator's attrs
+  block = block.replace(/<Skill\b[^>]*\/>/g, '')
   for (const sk of block.matchAll(/<Skill\b([^>]*)>([\s\S]*?)<\/Skill>/g)) {
     const a = attrs(sk[1])
     const gems: PobGem[] = []

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512">
+  <defs>
+    <linearGradient id="pgold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0cf8a"></stop><stop offset=".55" stop-color="#d7a94e"></stop><stop offset="1" stop-color="#a87c2e"></stop></linearGradient>
+    <radialGradient id="pglow" cx=".5" cy=".42" r=".6"><stop offset="0" stop-color="#3a2f17"></stop><stop offset="1" stop-color="#0b0d10"></stop></radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#pglow)"></rect>
+  <rect x="1" y="1" width="62" height="62" rx="13" fill="none" stroke="#6e5528" stroke-width="1.5"></rect>
+  <path d="M7 32C14.5 19 24 12.5 32 12.5S49.5 19 57 32c-7.5 13-17 19.5-25 19.5S14.5 45 7 32z" fill="url(#pgold)"></path>
+  <path d="M7 32C14.5 19 24 12.5 32 12.5S49.5 19 57 32" fill="none" stroke="#f7e2b0" stroke-width="1.3" stroke-linecap="round"></path>
+  <circle cx="32" cy="32" r="12" fill="#241a0a"></circle>
+  <circle cx="32" cy="32" r="7" fill="#8c2f24"></circle>
+  <circle cx="32" cy="32" r="2.8" fill="#1a0806"></circle>
+  <circle cx="29.5" cy="29.5" r="1.6" fill="#f7e2b0" opacity=".7"></circle>
+</svg>

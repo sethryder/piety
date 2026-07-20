@@ -761,6 +761,35 @@ body {
   gap: 10px;
 }
 
+.mini-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* wide mini window: text left, layout image beside it */
+@media (min-width: 480px) {
+  .mini-body {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .mini-body .zone-layout {
+    flex: 0 0 44%;
+    margin: 0;
+    position: sticky;
+    top: 0;
+  }
+
+  .mini .zone-layout img {
+    max-height: none;
+    width: 100%;
+  }
+}
+
 .mini-zone {
   color: var(--text-headline);
   font-size: 20px;

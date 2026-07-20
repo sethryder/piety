@@ -117,28 +117,30 @@ export default function MiniApp() {
         </button>
       </div>
       <div className="mini-body">
-        <h2 className="mini-zone">{cur.zone}</h2>
-        <ul className="steps mini-steps">
-          {cur.steps.map((s, i) => (
-            <StepLine key={i} s={s} />
-          ))}
-        </ul>
-        {due.length > 0 && (
-          <div className="mini-due">
-            {due.map((g) => (
-              <div key={g.gemId} className="gem-banner mini-banner">
-                <span className="gem-dot" style={{ background: g.color }} />
-                <b>{g.name}</b>&nbsp;— {g.how}
-              </div>
+        <div className="mini-main">
+          <h2 className="mini-zone">{cur.zone}</h2>
+          <ul className="steps mini-steps">
+            {cur.steps.map((s, i) => (
+              <StepLine key={i} s={s} />
             ))}
-          </div>
-        )}
+          </ul>
+          {due.length > 0 && (
+            <div className="mini-due">
+              {due.map((g) => (
+                <div key={g.gemId} className="gem-banner mini-banner">
+                  <span className="gem-dot" style={{ background: g.color }} />
+                  <b>{g.name}</b>&nbsp;— {g.how}
+                </div>
+              ))}
+            </div>
+          )}
+          {next && (
+            <div className="mini-next">
+              <span className="micro-label">THEN</span> {next.zone}
+            </div>
+          )}
+        </div>
         {showMap && <ZoneLayout areaId={cur.areaId} />}
-        {next && (
-          <div className="mini-next">
-            <span className="micro-label">THEN</span> {next.zone}
-          </div>
-        )}
       </div>
     </div>
   )

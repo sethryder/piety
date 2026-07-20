@@ -54,6 +54,51 @@ test('gem plan for the fixture build against the real route', () => {
   assert.match(abs!.how, /after /)
 })
 
+test('vendor-only offer, byName resolution, not-offered, start gem, sort tiebreak', () => {
+  const visits = parseRoute(
+    ['Hand in {quest|q1} #Some Quest\n➞ {enter|1_1_2} #The Coast\n'],
+    new Set()
+  )
+  const db = {
+    gems: {
+      S: { name: 'Spark', primary_attribute: 'intelligence', required_level: 1, is_support: false },
+      A: { name: 'Alpha', primary_attribute: 'strength', required_level: 8, is_support: false },
+      C: { name: 'Gamma', primary_attribute: 'dexterity', required_level: 2, is_support: false },
+      B: { name: 'Beta', primary_attribute: 'intelligence', required_level: 4, is_support: true }
+    },
+    colours: { intelligence: '#7aa7d9', strength: '#e08b7d', dexterity: '#8fbf7a' },
+    characters: { Witch: { start_gem_id: 'S', chest_gem_id: 'H' } },
+    quests: {
+      q1: {
+        name: 'Some Quest',
+        act: '1',
+        reward_offers: {
+          // no quest rewards at all: the vendor-only branch must be taken
+          a: { vendor: { A: { classes: [], npc: 'Nessa' }, C: { classes: ['Witch'], npc: 'Nessa' } } }
+        }
+      }
+    }
+  }
+  const gem = (gemId: string, name: string) => ({ gemId, name, level: 1, quality: 0, enabled: true })
+  const plan = planGems(
+    [gem('S', 'Spark'), gem('A', 'Alpha'), gem('B', 'Beta'), gem('', 'Gamma')],
+    'Witch',
+    visits,
+    db as never
+  )
+
+  // same visitIdx ties break by required level; unobtainable sorts last
+  assert.deepEqual(plan.map((g) => g.name), ['Spark', 'Gamma', 'Alpha', 'Beta'])
+  const [spark, gamma, alpha, beta] = plan
+  assert.ok(spark.granted)
+  assert.equal(spark.how, 'Starting gem — you begin with it')
+  assert.equal(gamma.gemId, 'C') // empty gemId resolved via gem name
+  assert.equal(gamma.how, 'Buy — Nessa, after Some Quest')
+  assert.equal(alpha.how, 'Buy — Nessa, after Some Quest') // classes:[] = every class
+  assert.equal(beta.visitIdx, Number.POSITIVE_INFINITY)
+  assert.match(beta.how, /trade or mule/)
+})
+
 test('quest reward beats vendor purchase at the same quest', () => {
   const visits = parseRoute(
     ['Hand in {quest|q1} #Some Quest\n➞ {enter|1_1_2} #The Coast\n'],

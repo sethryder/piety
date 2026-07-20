@@ -26,6 +26,17 @@ export function finishRun(run: Run, now: number): Run {
   return run.total !== null ? run : { ...run, total: now - run.start }
 }
 
+// Auto-pause: shift the start forward by the paused gap so every split
+// computed from (now - start) stays correct with no model change.
+export const rebaseStart = (run: Run, pausedSince: number, now: number): Run => ({
+  ...run,
+  start: run.start + (now - pausedSince)
+})
+
+// A partial run is worth keeping for best-act comparisons once it has a split.
+export const worthStashing = (r: Run | null): r is Run =>
+  r !== null && r.total === null && Object.keys(r.splits).length > 0
+
 // Best (gold) segment per act across all recorded runs, finished or abandoned.
 export function bestSegments(history: Run[]): Record<number, number> {
   const best: Record<number, number> = {}

@@ -47,6 +47,17 @@ test('parseRoute groups steps into zone visits', () => {
   assert.deepEqual(v[0].steps[0].tags, ['KILL'])
   assert.deepEqual(v[1].steps.map((s) => s.text), ['Get waypoint', '➞ The Coast'])
   assert.deepEqual(v[2].steps[0].hints, ['Go →'])
+  // quest_text, portal set/use, and logout render text + tags, not just visits
+  assert.deepEqual(v[2].steps.map((s) => s.text), [
+    'Find Glyph',
+    'Find bridge, place portal',
+    'Logout'
+  ])
+  assert.deepEqual(v[2].steps.map((s) => s.tags), [['QUEST'], ['PORT'], ['LOG']])
+  // "Take portal" is a step in the town where you take it, not the destination
+  assert.deepEqual(v[3].steps.map((s) => s.text), ['Take portal'])
+  assert.deepEqual(v[3].steps[0].tags, ['PORT'])
+  assert.deepEqual(v[4].steps.map((s) => s.text), ['➞ The Mud Flats'])
 })
 
 test('ifndef branch used without flag', () => {
@@ -76,6 +87,60 @@ test('advanceById tracks by area id', () => {
   // planned town transitions are always adjacent to the current visit
   assert.equal(advanceById(v, 5, '1_1_town'), 5)
   assert.equal(advance(v, 5, "Lioneye's Watch"), 5)
+})
+
+test('equidistant matches prefer forward', () => {
+  const v = parseRoute([SAMPLE], new Set(['LEAGUE_START']))
+  // The Coast appears at 2 and 4; from the town between them (3) a Coast
+  // line must move forward to 4, not backward to 2
+  assert.equal(advanceById(v, 3, '1_1_2'), 4)
+  assert.equal(advance(v, 3, 'The Coast'), 4)
+})
+
+test('remaining fragment types render text and tags', () => {
+  const FRAGS = `Enter the {trial}
+{ascend|Normal}
+Fight in {arena|The Ring of Blades}
+Find the {generic|Golden Hand}
+Pick up the {crafting}
+Take {waypoint|Unknown_Id}
+`
+  const v = parseRoute([FRAGS], new Set())
+  // waypoint with no comment and no known id name moves nowhere
+  assert.equal(v.length, 1)
+  assert.deepEqual(v[0].steps.map((s) => s.text), [
+    'Enter the Trial of Ascendancy',
+    'Ascend (Normal)',
+    'Fight in The Ring of Blades',
+    'Find the Golden Hand',
+    'Pick up the crafting recipe',
+    'Take Unknown_Id'
+  ])
+  assert.deepEqual(v[0].steps.map((s) => s.tags), [
+    ['TRIAL'],
+    ['TRIAL'],
+    ['GO'],
+    ['FIND'],
+    ['FIND'],
+    ['WP']
+  ])
+})
+
+test('dir arrows: cardinal, diagonal, wraparound, non-numeric', () => {
+  const DIRS = `Kill {kill|Boss}
+    #sub {dir|0}
+    #sub {dir|315}
+    #sub {dir|360}
+    #sub {dir|weird}
+`
+  const v = parseRoute([DIRS], new Set())
+  assert.deepEqual(v[0].steps[0].hints, ['↑', '↖', '↑', 'weird'])
+})
+
+test('portal|use before any portal|set moves nowhere', () => {
+  const v = parseRoute(['Take {portal|use}\n➞ {enter|1_1_2} #The Coast\n'], new Set())
+  assert.deepEqual(v.map((x) => x.zone), ['The Twilight Strand', 'The Coast'])
+  assert.deepEqual(v[0].steps[0], { text: 'Take portal', tags: ['PORT'], hints: [] })
 })
 
 test('real route files parse clean', () => {

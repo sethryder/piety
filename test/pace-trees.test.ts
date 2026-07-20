@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { actEnd, actSegment, actStart, bestSegments, finishRun, fmt, lastCrossing, pbOf, recordActEntry, recordZoneEntry, startRun } from '../src/renderer/src/pace.ts'
+import { actEnd, actSegment, actStart, bestSegments, finishRun, fmt, lastCrossing, pbOf, rebaseStart, recordActEntry, recordZoneEntry, startRun, worthStashing } from '../src/renderer/src/pace.ts'
 import { activeSpecIdx, autoAssign, BREAKPOINTS, treeDelta } from '../src/shared/trees.ts'
 import { parseLibraryFolders } from '../src/main/logtail.ts'
 import { decodePobCode } from '../src/main/pob.ts'
@@ -110,6 +110,66 @@ test('tree delta and node coverage against vendored tree data', () => {
   const act1 = build.specs.findIndex((s) => s.title === 'Act 1')
   const d1 = treeDelta(build.specs, assign, act1)
   assert.equal(d1.added.length, d1.allocated.size)
+})
+
+test('pace guards: fresh run, post-finish entries, empty history', () => {
+  let run = startRun(0)
+  assert.equal(lastCrossing(run), 1) // no splits yet
+  run = recordActEntry(run, 2, 60_000)
+  run = finishRun(run, 100_000)
+  assert.equal(recordActEntry(run, 3, 120_000), run) // finished: no new splits
+  assert.equal(recordZoneEntry(run, 5, 120_000), run)
+  assert.equal(pbOf([]), null)
+})
+
+test('rebaseStart preserves elapsed across a pause', () => {
+  const run = startRun(1000)
+  // paused at t=5000, resumed at t=9000: elapsed stays 4000
+  const r = rebaseStart(run, 5000, 9000)
+  assert.equal(9000 - r.start, 4000)
+})
+
+test('worthStashing: only unfinished runs with at least one act split', () => {
+  assert.equal(worthStashing(null), false)
+  assert.equal(worthStashing(startRun(0)), false) // nothing recorded
+  const run = recordActEntry(startRun(0), 2, 60_000)
+  assert.equal(worthStashing(run), true)
+  assert.equal(worthStashing(finishRun(run, 100_000)), false) // finished runs stash elsewhere
+})
+
+test('autoAssign act bounds', () => {
+  assert.equal(autoAssign('Act 10'), 9)
+  assert.equal(autoAssign('Act 0'), null)
+  assert.equal(autoAssign('Act 11'), null)
+  assert.equal(autoAssign('whatever'), null)
+})
+
+test('activeSpecIdx: campaign-done fallthrough and no-match null', () => {
+  // campaign done with an Early Maps spec picks it
+  assert.equal(activeSpecIdx([0, 10], 10, true), 1)
+  // campaign done but no Early Maps spec: fall through to act logic
+  assert.equal(activeSpecIdx([0, 4], 10, true), 1)
+  // every spec above the current act → null
+  assert.equal(activeSpecIdx([4, 9], 1), null)
+  // null assignments ignored
+  assert.equal(activeSpecIdx([null, 0], 1), 1)
+})
+
+test('treeDelta with an unassigned active spec still finds a base tree', () => {
+  const specs = [{ nodes: ['a'] }, { nodes: ['a', 'b'] }]
+  // active spec's breakpoint is null: any assigned spec below still serves as prev
+  const d = treeDelta(specs, [0, null], 1)
+  assert.deepEqual(d.added, ['b'])
+  assert.deepEqual(d.removed, [])
+})
+
+test('treeDelta removed nodes and gapped breakpoints', () => {
+  const specs = [{ nodes: ['a', 'b'] }, { nodes: ['a', 'c'] }]
+  // Act 1 and Act 5 with nothing in between: Act 1 is still the previous tree
+  const d = treeDelta(specs, [0, 4], 1)
+  assert.deepEqual(d.added, ['c'])
+  assert.deepEqual(d.removed, ['b'])
+  assert.deepEqual([...d.allocated], ['a', 'c'])
 })
 
 test('steam libraryfolders.vdf parsing', () => {

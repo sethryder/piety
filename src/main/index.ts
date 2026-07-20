@@ -4,7 +4,8 @@ import { exec } from 'node:child_process'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { findClientTxt, tailLog } from './logtail'
-import { decodePobCode } from './pob'
+import { decodePobCode, pobbInId } from './pob'
+import { POE_CMD, poeIsRunning } from './poe'
 import { listBuildFiles } from './pobBuilds'
 import { parsePob } from '../shared/pob'
 
@@ -45,24 +46,10 @@ function startTail(path: string | null): void {
   broadcast('log-status', currentLogPath)
 }
 
-// Game liveness: OS process listing only — no game memory, no injection, no
-// input. Covers PathOfExile.exe / _x64 / Steam / _KG, same names under Proton.
-const WSL_TASKLIST = '/mnt/c/Windows/System32/tasklist.exe'
-const POE_CMD =
-  process.platform === 'win32'
-    ? 'tasklist /FI "IMAGENAME eq PathOfExile*" /NH'
-    : existsSync(WSL_TASKLIST) // WSL: the game runs on the Windows host
-      ? `${WSL_TASKLIST} /FI "IMAGENAME eq PathOfExile*" /NH`
-      : 'pgrep -fa PathOfExile'
-
 let poeRunning = true // optimistic until the first poll: pausing needs positive absence
 function pollPoe(): void {
   exec(POE_CMD, (err, stdout) => {
-    // pgrep exits 1 on no-match, tasklist prints an INFO line; anything else
-    // (missing binary, locked-down shell) fails safe as "running" — a broken
-    // check must never pause someone's timer
-    const running =
-      err && err.code !== 1 ? true : /pathofexile/i.test(stdout)
+    const running = poeIsRunning(err, stdout)
     if (running !== poeRunning) {
       poeRunning = running
       broadcast('poe-status', running)
@@ -74,9 +61,9 @@ pollPoe()
 
 ipcMain.handle('pob-import', async (_e, input: string) => {
   let code = input.trim()
-  const url = /pobb\.in\/([A-Za-z0-9_-]+)/.exec(code)
-  if (url) {
-    const res = await fetch(`https://pobb.in/${url[1]}/raw`)
+  const id = pobbInId(code)
+  if (id) {
+    const res = await fetch(`https://pobb.in/${id}/raw`)
     if (!res.ok) throw new Error(`pobb.in fetch failed (${res.status})`)
     code = await res.text()
   }

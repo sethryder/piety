@@ -30,7 +30,7 @@ export default function App() {
   // ponytail: owned gems are global, not per-character; profiles fix that later
   const [owned, setOwned] = useState<Record<string, boolean>>(() => load('owned-gems', {}))
   const [ui, setUiState] = useState<{ view: View; mirror?: boolean }>(() =>
-    load('ui', { view: 'MIXED' as View, mirror: false })
+    load('ui', { view: 'SPLIT' as View, mirror: false })
   )
   // short window (e.g. FancyZones band on a portrait monitor) forces the compact band layout
   const [shortWindow, setShortWindow] = useState(() => window.innerHeight < 520)

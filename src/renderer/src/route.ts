@@ -5,7 +5,7 @@
 export type Step = { text: string; tags: string[]; hints: string[]; quests?: string[]; trial?: number; done?: boolean }
 export type ZoneVisit = { zone: string; act: number; steps: Step[]; areaId: string }
 
-export type TrialDue = { ordinal: number; zone: string; visitIdx: number; need: number }
+export type LabDue = { lab: number; name: string; need: number }
 
 // cumulative trials gating each lab: 6 normal, 9 cruel, 12 merciless
 export const labNeed = (ord: number): number => (ord <= 6 ? 6 : ord <= 9 ? 9 : 12)
@@ -20,18 +20,19 @@ export const tickTrials = (v: ZoneVisit, done: number): ZoneVisit => ({
   })
 })
 
-// trials whose zone the route has already passed but the log hasn't completed,
-// minus any the user dismissed
-export function dueTrials(visits: ZoneVisit[], idx: number, done: number, hidden: number[]): TrialDue[] {
-  const out: TrialDue[] = []
-  visits.forEach((v, vi) =>
-    v.steps.forEach((s) => {
-      if (s.trial && s.trial > done && vi <= idx && !hidden.includes(s.trial))
-        out.push({ ordinal: s.trial, zone: v.zone, visitIdx: vi, need: labNeed(s.trial) })
-    })
-  )
-  return out
-}
+// labs whose trials are banked, minus any the user dismissed (= ran the lab).
+// Trials themselves are ordinary route steps; only the lab is a reminder, so it
+// can happen at a natural stopping point instead of a fixed route position.
+// The act gate matters for non-league-start characters (trials are shared per
+// league, so all three unlock at once); on league start the trial count already
+// implies the act. ponytail: no log line marks lab completion, dismissal is manual
+export const dueLabs = (act: number, trials: number, hidden: number[]): LabDue[] =>
+  ['Normal', 'Cruel', 'Merciless'].flatMap((name, i) => {
+    const need = [6, 9, 12][i]
+    return act >= [3, 7, 10][i] && trials >= need && !hidden.includes(i + 1)
+      ? [{ lab: i + 1, name, need }]
+      : []
+  })
 
 const FRAG_RE = /\{([a-z_]+)(?:\|([^}]*))?\}/g
 // destinations referenced by id without a #comment in the route files

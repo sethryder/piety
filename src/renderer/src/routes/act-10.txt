@@ -22,9 +22,6 @@ Get {waypoint_get}
 Find and kill {kill|Vilenta}
 {logout}
 Hand in {quest|a10q6} #Vilenta's Vengeance
-{waypoint|Labyrinth_Airlock}
-{ascend|merciless}
-Get {crafting|3_Labyrinth_boss_3}
 {waypoint|2_10_2} #The Ravaged Square
 ➞ {enter|2_10_3} #The Torched Courts
     #sub Go {dir|135}

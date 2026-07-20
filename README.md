@@ -19,7 +19,7 @@ It is built for a second monitor. Not an in-game overlay, just a normal window y
 - **Pace timer** with per-act splits, per-zone splits, personal best comparison, best act segments (abandoned runs count, so act sprints are tracked too), a per-act death counter, run history, and a projected campaign finish. Starts automatically when you enter the Twilight Strand, stops at Karui Shores, and pauses while the game is closed. Click the footer timer chip to open the full pace panel
 - **Per-character profiles**: route position, gem checklist, and trial progress are saved per character and switch automatically as you play
 - **Four layouts** (glance, mixed, dense checklist, split with tree and gems) plus a compact band layout when the window is short, and a mirror option for left-side monitors
-- **Mini overlay**: a small always-on-top window with the current zone, steps, layout map, and gem/lab reminders. Lockable so you cannot drag or resize it by accident
+- **Overlay**: a small always-on-top window with the current zone, steps, layout map, and gem/lab reminders. Lockable so you cannot drag or resize it by accident
 - **Auto updates** via GitHub releases
 
 ## Getting started
@@ -28,11 +28,11 @@ It is built for a second monitor. Not an in-game overlay, just a normal window y
 2. The setup wizard walks you through it: locate `Client.txt` (usually found automatically, including Steam libraries on other drives), import your build from local PoB saves or a pasted code (or skip it for a guide-only setup), map your tree specs to act breakpoints, and pick league start or twink gear routing
 3. Play. The guide follows you as you enter zones
 
-If you use the mini overlay on top of the game, run PoE in Windowed Fullscreen. Exclusive fullscreen draws over everything.
+If you use the overlay on top of the game, run PoE in Windowed Fullscreen. Exclusive fullscreen draws over everything.
 
 ### Linux
 
-Download `Piety-*.AppImage` from Releases, make it executable (`chmod +x`), and run it. PoE installed through Steam/Proton is detected automatically, including libraries on other drives. If Path of Building runs under Wine or Lutris, builds in the default prefix are found too; set `POB_BUILDS_DIR` for custom prefixes. Known limitation: the mini overlay's always-on-top depends on your compositor, and some Wayland desktops ignore it (X11 is fine).
+Download `Piety-*.AppImage` from Releases, make it executable (`chmod +x`), and run it. PoE installed through Steam/Proton is detected automatically, including libraries on other drives. If Path of Building runs under Wine or Lutris, builds in the default prefix are found too; set `POB_BUILDS_DIR` for custom prefixes. Known limitation: the overlay's always-on-top depends on your compositor, and some Wayland desktops ignore it (X11 is fine).
 
 ## Development
 

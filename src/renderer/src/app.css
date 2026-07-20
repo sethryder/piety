@@ -698,10 +698,11 @@ button.pace-chip:hover {
   max-height: 150px;
 }
 
+/* below the image, not on it: the maps draw content right up to their edges */
 .zone-layout-count {
-  position: absolute;
-  right: 6px;
-  bottom: 6px;
+  display: block;
+  width: fit-content;
+  margin: 3px 0 0 auto;
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--text-primary);

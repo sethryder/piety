@@ -1564,6 +1564,16 @@ button.pace-chip:hover {
   cursor: pointer;
 }
 
+.banner-x {
+  margin-left: auto;
+  color: var(--text-secondary);
+  padding: 0 2px;
+}
+
+.banner-x:hover {
+  color: var(--text-primary);
+}
+
 .gems {
   display: flex;
   flex-direction: column;
@@ -1656,6 +1666,11 @@ button.pace-chip:hover {
 
 .class-warn {
   color: var(--negative);
+}
+
+.step-done {
+  color: var(--positive);
+  text-decoration: line-through;
 }
 
 .lvl-chip.over {

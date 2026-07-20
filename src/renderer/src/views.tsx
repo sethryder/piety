@@ -3,7 +3,7 @@ import type { PobBuild } from '../../shared/pob'
 import { levelingSet } from '../../shared/pob'
 import type { GemPlanEntry } from './gemPlan'
 import { actSegment, actStart, bestSegments, fmt, lastCrossing, totalDeaths, type Run } from './pace'
-import type { Step, ZoneVisit } from './route'
+import type { Step, TrialDue, ZoneVisit } from './route'
 import { levelStatus } from '../../shared/xp'
 import { TreeView } from './TreeView'
 import { ZoneLayout } from './ZoneLayout'
@@ -47,6 +47,8 @@ export type ViewProps = {
   setIdx: (i: number) => void
   cur: ZoneVisit
   due: GemPlanEntry[]
+  trialsDue: TrialDue[]
+  hideTrial: (ordinal: number) => void
   plan: GemPlanEntry[]
   owned: Record<string, boolean>
   toggleOwned: (gemId: string) => void
@@ -89,7 +91,7 @@ export function StepLine({ s }: { s: Step }) {
             {t}
           </span>
         ))}
-        <span>{rich(s.text)}</span>
+        <span className={s.done ? 'step-done' : ''}>{s.done && '✓ '}{rich(s.text)}</span>
       </div>
       {s.hints.map((h, j) => (
         <div key={j} className="hint">
@@ -100,9 +102,25 @@ export function StepLine({ s }: { s: Step }) {
   )
 }
 
-function DueBanners({ due, toggleOwned }: Pick<ViewProps, 'due' | 'toggleOwned'>) {
+function DueBanners({ due, trialsDue, hideTrial, toggleOwned, setIdx }: Pick<ViewProps, 'due' | 'trialsDue' | 'hideTrial' | 'toggleOwned' | 'setIdx'>) {
   return (
     <>
+      {trialsDue.map((t) => (
+        <button key={`t${t.ordinal}`} className="gem-banner" onClick={() => setIdx(t.visitIdx)}>
+          <span className="tag tag-TRIAL">TRIAL</span>
+          <b>Trial of Ascendancy</b>&nbsp;— {t.zone} · {t.ordinal}/{t.need} before lab
+          <span
+            className="banner-x"
+            title="Hide this reminder"
+            onClick={(e) => {
+              e.stopPropagation()
+              hideTrial(t.ordinal)
+            }}
+          >
+            ✕
+          </span>
+        </button>
+      ))}
       {due.map((g) => (
         <button key={g.gemId} className="gem-banner" onClick={() => toggleOwned(g.gemId)}>
           <span className="gem-dot" style={{ background: g.color }} />
@@ -188,7 +206,7 @@ export function FocusView(p: ViewProps) {
         </ul>
       )}
       <ZoneLayout areaId={p.cur.areaId} />
-      <DueBanners due={p.due} toggleOwned={p.toggleOwned} />
+      <DueBanners due={p.due} trialsDue={p.trialsDue} hideTrial={p.hideTrial} toggleOwned={p.toggleOwned} setIdx={p.setIdx} />
       <div className="then">
         <span className="micro-label">THEN</span>
         <UpNextRows visits={p.visits} idx={p.idx} setIdx={p.setIdx} count={3} />
@@ -218,7 +236,7 @@ export function MixedView(p: ViewProps) {
         </div>
         <ZoneLayout areaId={p.cur.areaId} />
       </section>
-      <DueBanners due={p.due} toggleOwned={p.toggleOwned} />
+      <DueBanners due={p.due} trialsDue={p.trialsDue} hideTrial={p.hideTrial} toggleOwned={p.toggleOwned} setIdx={p.setIdx} />
       <section className="up-next scroll">
         <span className="micro-label">UP NEXT</span>
         <UpNextRows visits={p.visits} idx={p.idx} setIdx={p.setIdx} preview />
@@ -528,8 +546,8 @@ export function BandView(p: ViewProps) {
       </div>
       <div className="band-col">
         <span className="micro-label">GEMS</span>
-        {p.due.length > 0 ? (
-          <DueBanners due={p.due} toggleOwned={p.toggleOwned} />
+        {p.due.length > 0 || p.trialsDue.length > 0 ? (
+          <DueBanners due={p.due} trialsDue={p.trialsDue} hideTrial={p.hideTrial} toggleOwned={p.toggleOwned} setIdx={p.setIdx} />
         ) : (
           <div className="empty">Nothing to buy right now.</div>
         )}

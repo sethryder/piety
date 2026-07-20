@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { banditFlags, levelingSet, type PobBuild } from '../../shared/pob'
 import { buildRoute } from './routeData'
+import { dueTrials } from './route'
 import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
 import { fmt, type Run } from './pace'
@@ -21,6 +22,8 @@ function load<T>(key: string, fallback: T): T {
 export default function MiniApp() {
   const [build, setBuild] = useState<PobBuild | null>(() => load('pob-build', null))
   const [owned, setOwned] = useState<Record<string, boolean>>(() => loadProfile().owned)
+  const [trials, setTrials] = useState(() => loadProfile().trials ?? 0)
+  const [hiddenTrials, setHiddenTrials] = useState<number[]>(() => loadProfile().hiddenTrials ?? [])
   const [leagueStart, setLeagueStart] = useState<boolean>(() => load('league-start', true))
   const [library, setLibrary] = useState<boolean>(() => load('library', true))
   const [banditOverride, setBanditOverride] = useState<string | null>(() =>
@@ -33,6 +36,7 @@ export default function MiniApp() {
   const [locked, setLocked] = useState<boolean>(() => load('mini-locked', false))
   const [showMap, setShowMap] = useState<boolean>(() => load('mini-map', true))
   const [autoFit, setAutoFit] = useState<boolean>(() => load('mini-autofit', true))
+  const [showDue, setShowDue] = useState<boolean>(() => load('mini-due', true))
   const bodyRef = useRef<HTMLDivElement>(null)
   const [now, setNow] = useState(() => Date.now())
   // freeze the clock while the game is closed; the main window rebases run.start
@@ -44,11 +48,14 @@ export default function MiniApp() {
     const refresh = () => {
       setBuild(load('pob-build', null))
       setOwned(loadProfile().owned)
+      setTrials(loadProfile().trials ?? 0)
+      setHiddenTrials(loadProfile().hiddenTrials ?? [])
       setLeagueStart(load('league-start', true))
       setLibrary(load('library', true))
       setBanditOverride(load('bandit-override', null))
       setRun(load('pace-run', null))
       setAutoFit(load('mini-autofit', true))
+      setShowDue(load('mini-due', true))
     }
     window.addEventListener('storage', refresh)
     return () => window.removeEventListener('storage', refresh)
@@ -100,6 +107,7 @@ export default function MiniApp() {
 
   const cur = visits[Math.min(idx, visits.length - 1)]
   const due = plan.filter((g) => !g.granted && g.visitIdx <= idx && !owned[g.gemId])
+  const trialsDue = dueTrials(visits, idx, trials, hiddenTrials)
   const next = visits[idx + 1]
   const elapsed = run ? (run.total ?? (pausedSince ?? now) - run.start) : null
 
@@ -134,7 +142,7 @@ export default function MiniApp() {
     for (const el of body.querySelectorAll('*')) ro.observe(el)
     report()
     return () => ro.disconnect()
-  }, [autoFit, showMap, cur, due.length, next])
+  }, [autoFit, showMap, showDue, cur, due.length, trialsDue.length, next])
 
   function step(d: number) {
     const ni = Math.min(Math.max(idx + d, 0), visits.length - 1)
@@ -211,13 +219,20 @@ export default function MiniApp() {
               <ZoneLayout areaId={cur.areaId} />
             </div>
           )}
-          {due.length > 0 && (
+          {showDue && (due.length > 0 || trialsDue.length > 0) && (
             <div className="mini-due">
+              {trialsDue.map((t) => (
+                <button key={`t${t.ordinal}`} className="gem-banner mini-banner" title="Hide this reminder" onClick={() => window.api.sendMiniAction({ kind: 'hide-trial', ordinal: t.ordinal })}>
+                  <span className="tag tag-TRIAL">TRIAL</span>
+                  <b>Trial of Ascendancy</b>&nbsp;— {t.zone} · {t.ordinal}/{t.need} before lab
+                  <span className="banner-x">✕</span>
+                </button>
+              ))}
               {due.map((g) => (
-                <div key={g.gemId} className="gem-banner mini-banner">
+                <button key={g.gemId} className="gem-banner mini-banner" title="Mark owned" onClick={() => window.api.sendMiniAction({ kind: 'toggle-owned', gemId: g.gemId })}>
                   <span className="gem-dot" style={{ background: g.color }} />
                   <b>{g.name}</b>&nbsp;— {g.how}
-                </div>
+                </button>
               ))}
             </div>
           )}

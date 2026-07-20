@@ -34,5 +34,9 @@ contextBridge.exposeInMainWorld('api', {
   setMiniLock: (locked: boolean) => ipcRenderer.send('mini-lock', locked),
   fitMiniHeight: (h: number) => ipcRenderer.send('mini-fit-height', h),
   syncIdx: (idx: number) => ipcRenderer.send('sync-idx', idx),
-  onIdxSync: (cb: (idx: number) => void) => on('idx-sync', cb)
+  onIdxSync: (cb: (idx: number) => void) => on('idx-sync', cb),
+  sendMiniAction: (a: { kind: string; gemId?: string; ordinal?: number }) =>
+    ipcRenderer.send('mini-action', a),
+  onMiniAction: (cb: (a: { kind: string; gemId?: string; ordinal?: number }) => void) =>
+    on('mini-action', cb)
 })

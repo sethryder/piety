@@ -1,8 +1,27 @@
 // Parser for the exile-leveling step DSL.
 // Route data vendored from https://github.com/HeartofPhos/exile-leveling (MIT).
 
-export type Step = { text: string; tags: string[]; hints: string[]; quests?: string[] }
+// trial: 1-based route ordinal of a {trial} step; done: decorated at render time
+export type Step = { text: string; tags: string[]; hints: string[]; quests?: string[]; trial?: number; done?: boolean }
 export type ZoneVisit = { zone: string; act: number; steps: Step[]; areaId: string }
+
+export type TrialDue = { ordinal: number; zone: string; visitIdx: number; need: number }
+
+// cumulative trials gating each lab: 6 normal, 9 cruel, 12 merciless
+export const labNeed = (ord: number): number => (ord <= 6 ? 6 : ord <= 9 ? 9 : 12)
+
+// trials whose zone the route has already passed but the log hasn't completed,
+// minus any the user dismissed
+export function dueTrials(visits: ZoneVisit[], idx: number, done: number, hidden: number[]): TrialDue[] {
+  const out: TrialDue[] = []
+  visits.forEach((v, vi) =>
+    v.steps.forEach((s) => {
+      if (s.trial && s.trial > done && vi <= idx && !hidden.includes(s.trial))
+        out.push({ ordinal: s.trial, zone: v.zone, visitIdx: vi, need: labNeed(s.trial) })
+    })
+  )
+  return out
+}
 
 const FRAG_RE = /\{([a-z_]+)(?:\|([^}]*))?\}/g
 // destinations referenced by id without a #comment in the route files
@@ -28,6 +47,7 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
   let lastTownId = '1_1_town'
   let portalZone = ''
   let portalZoneId = ''
+  let trialN = 0
 
   files.forEach((file, fi) => {
     const act = fi + 1
@@ -61,6 +81,7 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
       const questIds: string[] = []
       let move: string | null = null
       let moveId = ''
+      let stepTrial = 0
       const text = line
         .replace(FRAG_RE, (_m, type: string, rawArg?: string) => {
           const arg = rawArg ?? ''
@@ -94,6 +115,7 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
               return arg
             case 'trial':
               tags.push('TRIAL')
+              stepTrial = ++trialN
               return 'Trial of Ascendancy'
             case 'ascend':
               tags.push('TRIAL')
@@ -132,6 +154,7 @@ export function parseRoute(files: string[], flags: Set<string>): ZoneVisit[] {
 
       lastStep = { text, tags, hints: [] }
       if (questIds.length) lastStep.quests = questIds
+      if (stepTrial) lastStep.trial = stepTrial
       cur.steps.push(lastStep)
 
       if (move) {

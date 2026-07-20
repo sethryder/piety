@@ -137,6 +137,13 @@ ipcMain.on('sync-idx', (e, idx: number) => {
     if (w.webContents !== e.sender) w.webContents.send('idx-sync', idx)
 })
 
+// the mini never writes shared state; its actions are relayed to the main
+// window, which applies them and persists (the storage event echoes back)
+ipcMain.on('mini-action', (e, a: unknown) => {
+  for (const w of BrowserWindow.getAllWindows())
+    if (w.webContents !== e.sender) w.webContents.send('mini-action', a)
+})
+
 let mini: BrowserWindow | null = null
 
 function toggleMini(): void {

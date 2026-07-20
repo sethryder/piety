@@ -48,7 +48,10 @@ export default function App() {
   const [history, setHistory] = useState<Run[]>(() => load('pace-history', []))
   const [now, setNow] = useState(() => Date.now())
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
-  const [wizardOpen, setWizardOpen] = useState(() => load<PobBuild | null>('pob-build', null) === null)
+  const [setupDone, setSetupDone] = useState(() => load('setup-done', false))
+  const [wizardOpen, setWizardOpen] = useState(
+    () => load<PobBuild | null>('pob-build', null) === null && !load('setup-done', false)
+  )
   const [paceOpen, setPaceOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [appVersion, setAppVersion] = useState('')
@@ -268,6 +271,7 @@ export default function App() {
   }
 
   function finishWizard(r: WizardResult) {
+    setSetupDone(save('setup-done', true))
     setBuild(save('pob-build', r.build))
     setTreeAssign(save('tree-assign', r.treeAssign))
     setLeagueStart(save('league-start', r.leagueStart))
@@ -373,7 +377,7 @@ export default function App() {
             }}
             logPath={logPath}
             lastLine={logLines.at(-1) ?? ''}
-            canClose={build !== null}
+            canClose={build !== null || setupDone}
             onClose={() => setWizardOpen(false)}
             onFinish={finishWizard}
           />

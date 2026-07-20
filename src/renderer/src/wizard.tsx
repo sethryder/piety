@@ -5,7 +5,7 @@ import { autoAssign, BREAKPOINTS } from '../../shared/trees'
 import { buildRoute } from './routeData'
 
 export type WizardResult = {
-  build: PobBuild
+  build: PobBuild | null // null = guide-only, no PoB import
   treeAssign: (number | null)[]
   leagueStart: boolean
   bandit: string | null // override; null = use the PoB's choice
@@ -170,7 +170,18 @@ export function Wizard(props: {
               <button className="primary" onClick={parse} disabled={!pobText.trim()}>
                 PARSE
               </button>
+              {!parsed && (
+                <button className="import-btn" onClick={() => setStep(3)}>
+                  SKIP — GUIDE ONLY
+                </button>
+              )}
             </div>
+            {!parsed && (
+              <div className="whint">
+                No build? Skip this and use just the zone guide and pace timer. You can import
+                one later from SETUP.
+              </div>
+            )}
             {error && <div className="import-error">{error}</div>}
             {parsed && (
               <div className="wcard">
@@ -241,7 +252,9 @@ export function Wizard(props: {
                 value={bandit ?? ''}
                 onChange={(e) => setBandit(e.target.value === '' ? null : e.target.value)}
               >
-                <option value="">From PoB ({parsed?.bandit ?? 'Kill all'})</option>
+                <option value="">
+                  {parsed ? `From PoB (${parsed.bandit ?? 'Kill all'})` : 'Kill all (default)'}
+                </option>
                 {BANDITS.map((b) => (
                   <option key={b} value={b}>
                     {b === 'None' ? 'Kill all' : `Help ${b}`}
@@ -267,7 +280,10 @@ export function Wizard(props: {
 
       <div className="wizard-foot">
         {step > 0 && (
-          <button className="import-btn" onClick={() => setStep(step - 1)}>
+          <button
+            className="import-btn"
+            onClick={() => setStep(step === 3 && !parsed ? 1 : step - 1)}
+          >
             BACK
           </button>
         )}
@@ -283,7 +299,6 @@ export function Wizard(props: {
           <button
             className="primary"
             onClick={() =>
-              parsed &&
               props.onFinish({ build: parsed, treeAssign: assign, leagueStart, bandit, sourcePath })
             }
           >

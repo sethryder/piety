@@ -140,8 +140,10 @@ export default function App() {
         setIdx(ni)
 
         let r = runRef.current
-        // only a brand-new character reaches the Twilight Strand: always a fresh run
-        const atStart = e.type === 'gen' ? e.areaId === visits[0].areaId : e.zone === visits[0].zone
+        // a brand-new character always generates a fresh Twilight Strand instance,
+        // so restart only on 'gen' by area id — act 6's Twilight Strand shares the
+        // display name, and a name-based check would reset the run there
+        const atStart = e.type === 'gen' && e.areaId === visits[0].areaId
         if (atStart) {
           stashPartial(r)
           r = startRun(nowMs)

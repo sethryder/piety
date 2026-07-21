@@ -390,6 +390,21 @@ body {
   padding: 6px 0;
 }
 
+.socket-row.off,
+.socket-chip.off {
+  opacity: 0.45;
+}
+
+.socket-sep {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-top: 8px;
+}
+
 .socket-slot {
   font-family: var(--font-mono);
   font-size: 10px;

@@ -32,8 +32,32 @@ test('decodes and parses a real pobb.in export', () => {
   assert.ok(lvl!.groups.length > 0)
   assert.ok(lvl!.groups.every((g) => g.gems.every((gem) => gem.name.length > 0)))
   // self-closing separator rows must not swallow real groups' attributes
+  // (labels like "======" are legit author-made dividers, so only ban attr blobs)
   for (const set of build.skillSets)
-    for (const g of set.groups) assert.ok(!/=/.test(g.label), `separator leaked: ${g.label}`)
+    for (const g of set.groups) assert.ok(!/="/.test(g.label), `separator leaked: ${g.label}`)
+  assert.ok(
+    build.skillSets.some((s) => s.groups.some((g) => g.gems.length === 0 && g.label !== '')),
+    'fixture separators survive parsing'
+  )
+})
+
+test('labeled gemless groups kept as separators, unlabeled ones dropped', () => {
+  const xml = `<PathOfBuilding><Build className="Witch"/><Skills>
+  <SkillSet id="1" title="Levelling">
+    <Skill label="^x00FF00Level 1-12" enabled="false"/>
+    <Skill slot="Body Armour" label="Main" enabled="true">
+      <Gem nameSpec="Fireball"/>
+    </Skill>
+    <Skill slot="Gloves"/>
+    <Skill label="Act 6+" enabled="false"></Skill>
+  </SkillSet>
+</Skills></PathOfBuilding>`
+  const groups = parsePob(xml).skillSets[0].groups
+  assert.deepEqual(
+    groups.map((g) => [g.label || g.slot, g.gems.length]),
+    [['Level 1-12', 0], ['Main', 1], ['Act 6+', 0]]
+  )
+  assert.equal(groups[1].gems[0].name, 'Fireball') // separator didn't swallow it
 })
 
 test('old PoB export: Skill elements directly under Skills', () => {

@@ -241,19 +241,25 @@ function SocketGroups({ build, gemColor }: Pick<ViewProps, 'build' | 'gemColor'>
   if (!set) return <div className="empty">Import a build to see socket groups.</div>
   return (
     <div className="sockets">
-      {set.groups.map((g, i) => (
-        <div key={i} className="socket-row">
-          <span className="socket-slot">{g.slot || g.label || '—'}</span>
-          <span className="socket-gems">
-            {g.gems.map((gem, j) => (
-              <span key={j} className="socket-chip">
-                <span className="gem-dot" style={{ background: gemColor[gem.gemId] ?? '#c6cdd7' }} />
-                {gem.name}
-              </span>
-            ))}
-          </span>
-        </div>
-      ))}
+      {set.groups.map((g, i) =>
+        g.gems.length === 0 ? (
+          <div key={i} className="socket-sep">
+            {g.label}
+          </div>
+        ) : (
+          <div key={i} className={`socket-row ${g.enabled ? '' : 'off'}`}>
+            <span className="socket-slot">{g.slot || g.label || '—'}</span>
+            <span className="socket-gems">
+              {g.gems.map((gem, j) => (
+                <span key={j} className={`socket-chip ${gem.enabled ? '' : 'off'}`}>
+                  <span className="gem-dot" style={{ background: gemColor[gem.gemId] ?? '#c6cdd7' }} />
+                  {gem.name}
+                </span>
+              ))}
+            </span>
+          </div>
+        )
+      )}
     </div>
   )
 }

@@ -35,13 +35,12 @@ function attrs(tag: string): Record<string, string> {
 
 function parseSkills(block: string): SocketGroup[] {
   const groups: SocketGroup[] = []
-  // self-closing <Skill .../> rows are PoB's visual separators; drop them so the
-  // lazy match can't attribute the next real group's gems to a separator's attrs
-  block = block.replace(/<Skill\b[^>]*\/>/g, '')
-  for (const sk of block.matchAll(/<Skill\b([^>]*)>([\s\S]*?)<\/Skill>/g)) {
+  // self-closing <Skill .../> rows are PoB's label-only separators; the
+  // alternation keeps a separator from swallowing the next real group's gems
+  for (const sk of block.matchAll(/<Skill\b([^>]*?)(?:\/>|>([\s\S]*?)<\/Skill>)/g)) {
     const a = attrs(sk[1])
     const gems: PobGem[] = []
-    for (const g of sk[2].matchAll(/<Gem\b([^>]*)\/>/g)) {
+    for (const g of (sk[2] ?? '').matchAll(/<Gem\b([^>]*)\/>/g)) {
       const ga = attrs(g[1])
       if (!ga.nameSpec) continue
       gems.push({
@@ -52,13 +51,10 @@ function parseSkills(block: string): SocketGroup[] {
         enabled: ga.enabled !== 'false'
       })
     }
-    if (gems.length === 0) continue
-    groups.push({
-      slot: a.slot ?? '',
-      label: stripColors(a.label ?? ''),
-      enabled: a.enabled !== 'false',
-      gems
-    })
+    const label = stripColors(a.label ?? '')
+    // gemless groups with a label are section separators; unlabeled ones are noise
+    if (gems.length === 0 && label === '') continue
+    groups.push({ slot: a.slot ?? '', label, enabled: a.enabled !== 'false', gems })
   }
   return groups
 }

@@ -32,7 +32,7 @@ contextBridge.exposeInMainWorld('api', {
   installUpdate: () => ipcRenderer.send('install-update'),
   toggleMini: () => ipcRenderer.send('toggle-mini'),
   setMiniLock: (locked: boolean) => ipcRenderer.send('mini-lock', locked),
-  fitMiniHeight: (h: number) => ipcRenderer.send('mini-fit-height', h),
+  fitMiniHeight: (h: number, growUp: boolean) => ipcRenderer.send('mini-fit-height', h, growUp),
   syncIdx: (idx: number) => ipcRenderer.send('sync-idx', idx),
   onIdxSync: (cb: (idx: number) => void) => on('idx-sync', cb),
   sendMiniAction: (a: { kind: string; gemId?: string; ordinal?: number }) =>

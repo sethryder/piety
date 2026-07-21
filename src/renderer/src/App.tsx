@@ -74,6 +74,7 @@ export default function App() {
   const [autoView, setAutoView] = useState<boolean>(() => load('auto-view', false))
   const [miniAutoFit, setMiniAutoFit] = useState<boolean>(() => load('mini-autofit', true))
   const [miniDue, setMiniDue] = useState<boolean>(() => load('mini-due', true))
+  const [miniGrowUp, setMiniGrowUp] = useState<boolean>(() => load('mini-grow-up', false))
   // auto view: FOCUS while in the wilderness, the user's chosen view in town.
   // Transient — a manual view click overrides until the next zone change.
   const [autoFocus, setAutoFocus] = useState(false)
@@ -624,6 +625,15 @@ export default function App() {
                   onChange={(e) => setMiniAutoFit(save('mini-autofit', e.target.checked))}
                 />
                 Overlay auto-height — the overlay window resizes to fit each step
+              </label>
+              <label className="settings-row">
+                <input
+                  type="checkbox"
+                  checked={miniGrowUp}
+                  onChange={(e) => setMiniGrowUp(save('mini-grow-up', e.target.checked))}
+                />
+                Overlay grows upward — pin the bottom edge, for docking near the bottom of the
+                screen
               </label>
               <label className="settings-row">
                 <input

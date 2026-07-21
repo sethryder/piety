@@ -34,7 +34,7 @@ interface Window {
     installUpdate: () => void
     toggleMini: () => void
     setMiniLock: (locked: boolean) => void
-    fitMiniHeight: (h: number) => void
+    fitMiniHeight: (h: number, growUp: boolean) => void
     syncIdx: (idx: number) => void
     onIdxSync: (cb: (idx: number) => void) => () => void
     sendMiniAction: (a: MiniAction) => void

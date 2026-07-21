@@ -186,14 +186,18 @@ ipcMain.on('toggle-mini', toggleMini)
 // locked mini = fully frozen geometry: dragging is blocked in CSS, resizing here
 ipcMain.on('mini-lock', (_e, locked: boolean) => mini?.setResizable(!locked))
 
-// content-driven height: grow down from the pinned top edge, clamp to the
-// screen so the body's own scroll remains the fallback for oversized steps
-ipcMain.on('mini-fit-height', (_e, h: number) => {
+// content-driven height: grow from the pinned edge (top by default, bottom
+// when the overlay is docked low and growUp is on), clamp to the screen so
+// the body's own scroll remains the fallback for oversized steps
+ipcMain.on('mini-fit-height', (_e, h: number, growUp: boolean) => {
   if (!mini) return
   const b = mini.getBounds()
   const wa = screen.getDisplayMatching(b).workArea
-  const target = Math.max(180, Math.min(Math.round(h), wa.y + wa.height - b.y))
-  if (Math.abs(target - b.height) > 2) mini.setBounds({ ...b, height: target })
+  const room = growUp ? b.y + b.height - wa.y : wa.y + wa.height - b.y
+  const target = Math.max(180, Math.min(Math.round(h), room))
+  if (Math.abs(target - b.height) > 2)
+    // clamp so the 180px min height can't push the top edge above the work area
+    mini.setBounds({ ...b, y: growUp ? Math.max(wa.y, b.y + b.height - target) : b.y, height: target })
 })
 
 function createWindow(): void {

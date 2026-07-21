@@ -37,6 +37,7 @@ export default function MiniApp() {
   const [showMap, setShowMap] = useState<boolean>(() => load('mini-map', true))
   const [autoFit, setAutoFit] = useState<boolean>(() => load('mini-autofit', true))
   const [showDue, setShowDue] = useState<boolean>(() => load('mini-due', true))
+  const [growUp, setGrowUp] = useState<boolean>(() => load('mini-grow-up', false))
   const [routeTexts, setRouteTexts] = useState<string[]>(() => activeRouteTexts())
   const bodyRef = useRef<HTMLDivElement>(null)
   const [now, setNow] = useState(() => Date.now())
@@ -57,6 +58,7 @@ export default function MiniApp() {
       setRun(load('pace-run', null))
       setAutoFit(load('mini-autofit', true))
       setShowDue(load('mini-due', true))
+      setGrowUp(load('mini-grow-up', false))
       // keep the old array identity when unchanged so the visits memo holds
       setRouteTexts((old) => {
         const next = activeRouteTexts()
@@ -144,14 +146,15 @@ export default function MiniApp() {
       const cs = getComputedStyle(body)
       const chrome = window.innerHeight - body.clientHeight // bar + borders
       window.api.fitMiniHeight(
-        Math.ceil(chrome + content + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom))
+        Math.ceil(chrome + content + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)),
+        growUp
       )
     }
     const ro = new ResizeObserver(report)
     for (const el of body.querySelectorAll('*')) ro.observe(el)
     report()
     return () => ro.disconnect()
-  }, [autoFit, showMap, showDue, cur, due.length, labsDue.length, next])
+  }, [autoFit, showMap, showDue, growUp, cur, due.length, labsDue.length, next])
 
   function step(d: number) {
     const ni = Math.min(Math.max(idx + d, 0), visits.length - 1)

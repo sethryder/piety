@@ -241,7 +241,7 @@ export default function App() {
         setLogLines((l) => [...l.slice(-99), e.line])
       } else if (e.type === 'level') {
         if (e.name !== charRef.current) {
-          const prof = claimProfile(e.name, idxRef.current)
+          const prof = claimProfile(e.name, idxRef.current, e.level <= 2)
           charRef.current = e.name
           setOwned(prof.owned)
           setTrials(prof.trials ?? 0)
@@ -283,6 +283,9 @@ export default function App() {
           // pending '' profile until the first level-up line names them
           if (charRef.current !== '') {
             charRef.current = save('last-char', '')
+            // persist now, not via the save effect: a level-up in the same
+            // poll batch claims before React flushes and must see this
+            saveProfile('', { owned: {}, idx: idxRef.current })
             setOwned({})
             setTrials(0)
             setHiddenLabs([])

@@ -58,6 +58,22 @@ test('saveProfile / claimProfile roundtrip persists and sets last-char', () => {
   assert.deepEqual(loadProfile(), { owned: { a: true }, idx: 5 })
 })
 
+test('a recreated character does not inherit the deleted namesake profile', () => {
+  const all = {
+    '': { owned: {}, idx: 0 },
+    Fresh: { owned: { g1: true }, idx: 90 } // deleted char, same name
+  }
+  const { all: next, prof } = claim(all, 'Fresh', 0, true)
+  assert.deepEqual(prof, { owned: {}, idx: 0 })
+  assert.equal(next[''], undefined)
+  assert.deepEqual(next.Fresh, prof)
+})
+
+test('newChar without a pending profile starts fresh, ignoring the namesake', () => {
+  const { prof } = claim({ Fresh: { owned: { g1: true }, idx: 90 } }, 'Fresh', 1, true)
+  assert.deepEqual(prof, { owned: {}, idx: 1 })
+})
+
 test('named profile wins over a stale pending one', () => {
   const all = {
     '': { owned: {}, idx: 0 },

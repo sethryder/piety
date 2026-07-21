@@ -33,20 +33,24 @@ export function saveProfile(name: string, prof: Profile): void {
 
 // Pure core of the level-line switch: resume the named profile, else claim the
 // pending '' one (a new char just got named), else start fresh at the current
-// position (app adopted mid-campaign).
+// position (app adopted mid-campaign). newChar (the "is now level 2" line,
+// which fires exactly once per character) skips resume-by-name: a deleted and
+// recreated character reuses its name and must not inherit the stale profile.
 export function claim(
   all: Record<string, Profile>,
   name: string,
-  curIdx: number
+  curIdx: number,
+  newChar = false
 ): { all: Record<string, Profile>; prof: Profile } {
-  const prof = all[name] ?? all[''] ?? { owned: {}, idx: curIdx }
+  const fresh = { owned: {}, idx: curIdx }
+  const prof = newChar ? (all[''] ?? fresh) : (all[name] ?? all[''] ?? fresh)
   const next = { ...all, [name]: prof }
   delete next['']
   return { all: next, prof }
 }
 
-export function claimProfile(name: string, curIdx: number): Profile {
-  const { all, prof } = claim(read('profiles', {}), name, curIdx)
+export function claimProfile(name: string, curIdx: number, newChar = false): Profile {
+  const { all, prof } = claim(read('profiles', {}), name, curIdx, newChar)
   localStorage.setItem('profiles', JSON.stringify(all))
   localStorage.setItem('last-char', JSON.stringify(name))
   return prof

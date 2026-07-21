@@ -109,9 +109,11 @@ export function banditFlags(bandit: string | null): string[] {
   }
 }
 
-// Prefer the set named like "levelling", else PoB's active set, else the first.
-export function levelingSet(build: PobBuild): PobSkillSet | null {
+// Prefer the user-picked set, else one named like "levelling", else PoB's
+// active set, else the first.
+export function levelingSet(build: PobBuild, preferId?: string | null): PobSkillSet | null {
   return (
+    (preferId != null ? build.skillSets.find((s) => s.id === preferId) : undefined) ??
     build.skillSets.find((s) => /level/i.test(s.title)) ??
     build.skillSets.find((s) => s.id === build.activeSkillSet) ??
     build.skillSets[0] ??

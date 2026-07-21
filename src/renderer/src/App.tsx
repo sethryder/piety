@@ -70,6 +70,8 @@ export default function App() {
   const [updateMsg, setUpdateMsg] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
   const [pobSource, setPobSource] = useState<string | null>(() => load('pob-source', null))
+  const [skillSet, setSkillSetState] = useState<string | null>(() => load('skill-set', null))
+  const setSkillSet = (id: string) => setSkillSetState(save('skill-set', id))
   const [accent, setAccent] = useState<string>(() => load('accent', '#d7a94e'))
   const [autoView, setAutoView] = useState<boolean>(() => load('auto-view', false))
   const [miniAutoFit, setMiniAutoFit] = useState<boolean>(() => load('mini-autofit', true))
@@ -146,10 +148,10 @@ export default function App() {
   )
 
   const plan = useMemo(() => {
-    const set = build ? levelingSet(build) : null
+    const set = build ? levelingSet(build, skillSet) : null
     if (!build || !set) return []
     return planGems(set.groups.flatMap((g) => g.gems), build.className, visits, gemDb)
-  }, [build, visits])
+  }, [build, visits, skillSet])
 
   const gemColor = useMemo(
     () => Object.fromEntries(plan.map((g) => [g.gemId, g.color])),
@@ -468,6 +470,8 @@ export default function App() {
     build,
     tab,
     setTab,
+    skillSet,
+    setSkillSet,
     run,
     pb,
     history,

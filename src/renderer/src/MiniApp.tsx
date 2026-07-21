@@ -39,6 +39,7 @@ export default function MiniApp() {
   const [showDue, setShowDue] = useState<boolean>(() => load('mini-due', true))
   const [growUp, setGrowUp] = useState<boolean>(() => load('mini-grow-up', false))
   const [routeTexts, setRouteTexts] = useState<string[]>(() => activeRouteTexts())
+  const [skillSet, setSkillSet] = useState<string | null>(() => load('skill-set', null))
   const bodyRef = useRef<HTMLDivElement>(null)
   const [now, setNow] = useState(() => Date.now())
   // freeze the clock while the game is closed; the main window rebases run.start
@@ -59,6 +60,7 @@ export default function MiniApp() {
       setAutoFit(load('mini-autofit', true))
       setShowDue(load('mini-due', true))
       setGrowUp(load('mini-grow-up', false))
+      setSkillSet(load('skill-set', null))
       // keep the old array identity when unchanged so the visits memo holds
       setRouteTexts((old) => {
         const next = activeRouteTexts()
@@ -111,10 +113,10 @@ export default function MiniApp() {
   )
 
   const plan = useMemo(() => {
-    const set = build ? levelingSet(build) : null
+    const set = build ? levelingSet(build, skillSet) : null
     if (!build || !set) return []
     return planGems(set.groups.flatMap((g) => g.gems), build.className, visits, gemDb)
-  }, [build, visits])
+  }, [build, visits, skillSet])
 
   const cur = tickTrials(visits[Math.min(idx, visits.length - 1)], trials)
   const due = plan.filter((g) => !g.granted && g.visitIdx <= idx && !owned[g.gemId])

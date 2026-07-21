@@ -60,6 +60,22 @@ test('labeled gemless groups kept as separators, unlabeled ones dropped', () => 
   assert.equal(groups[1].gems[0].name, 'Fireball') // separator didn't swallow it
 })
 
+test('levelingSet prefers an explicitly picked set id', () => {
+  const mk = (id: string, title: string) => ({ id, title, groups: [] })
+  const build = {
+    className: '',
+    ascendancy: '',
+    level: null,
+    bandit: null,
+    activeSkillSet: null,
+    specs: [],
+    skillSets: [mk('1', 'Levelling'), mk('2', 'Endgame')]
+  }
+  assert.equal(levelingSet(build, '2')?.id, '2')
+  assert.equal(levelingSet(build, '9')?.id, '1') // stale pick falls back
+  assert.equal(levelingSet(build, null)?.id, '1')
+})
+
 test('old PoB export: Skill elements directly under Skills', () => {
   const xml = `<?xml version="1.0"?>
 <PathOfBuilding>

@@ -57,6 +57,8 @@ export type ViewProps = {
   build: PobBuild | null
   tab: string
   setTab: (t: string) => void
+  skillSet: string | null
+  setSkillSet: (id: string) => void
   run: Run | null
   pb: Run | null
   history: Run[]
@@ -236,11 +238,25 @@ export function MixedView(p: ViewProps) {
   )
 }
 
-function SocketGroups({ build, gemColor }: Pick<ViewProps, 'build' | 'gemColor'>) {
-  const set = build ? levelingSet(build) : null
-  if (!set) return <div className="empty">Import a build to see socket groups.</div>
+function SocketGroups({ build, gemColor, skillSet, setSkillSet }: Pick<ViewProps, 'build' | 'gemColor' | 'skillSet' | 'setSkillSet'>) {
+  const set = build ? levelingSet(build, skillSet) : null
+  if (!build || !set) return <div className="empty">Import a build to see socket groups.</div>
   return (
     <div className="sockets">
+      {build.skillSets.length > 1 && (
+        <select
+          className="set-select"
+          value={set.id}
+          title="PoB skill set"
+          onChange={(e) => setSkillSet(e.target.value)}
+        >
+          {build.skillSets.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.title || `Set ${s.id}`}
+            </option>
+          ))}
+        </select>
+      )}
       {set.groups.map((g, i) =>
         g.gems.length === 0 ? (
           <div key={i} className="socket-sep">
@@ -474,7 +490,7 @@ export function DenseView(p: ViewProps) {
       </div>
       <div className="tab-panel">
         {p.tab === 'GEMS' && <GemList plan={p.plan} owned={p.owned} idx={p.idx} toggleOwned={p.toggleOwned} />}
-        {p.tab === 'SOCKETS' && <SocketGroups build={p.build} gemColor={p.gemColor} />}
+        {p.tab === 'SOCKETS' && <SocketGroups build={p.build} gemColor={p.gemColor} skillSet={p.skillSet} setSkillSet={p.setSkillSet} />}
         {p.tab === 'TREE' &&
           (p.treeInfo ? (
             <TreeView {...p.treeInfo} />
@@ -510,7 +526,7 @@ export function SplitView(p: ViewProps & { mirror: boolean }) {
       </div>
       <div className="split-gems">
         <span className="micro-label">LINKS</span>
-        <SocketGroups build={p.build} gemColor={p.gemColor} />
+        <SocketGroups build={p.build} gemColor={p.gemColor} skillSet={p.skillSet} setSkillSet={p.setSkillSet} />
         <span className="micro-label">GEMS</span>
         <GemList plan={p.plan} owned={p.owned} idx={p.idx} toggleOwned={p.toggleOwned} />
       </div>

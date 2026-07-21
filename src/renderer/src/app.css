@@ -405,6 +405,11 @@ body {
   margin-top: 8px;
 }
 
+.set-select {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
 .socket-slot {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -1753,7 +1758,8 @@ button.pace-chip:hover {
 }
 
 .route-toolbar select,
-.route-row select {
+.route-row select,
+.set-select {
   background: var(--bg-chrome);
   border: 1px solid var(--border-card);
   border-radius: 6px;

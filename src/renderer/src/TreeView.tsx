@@ -46,12 +46,20 @@ export function TreeView({
   allocated,
   added,
   removed,
-  title
+  title,
+  pick,
+  count,
+  auto,
+  onPick
 }: {
   allocated: Set<string>
   added: string[]
   removed: string[]
   title: string
+  pick: number
+  count: number
+  auto: boolean
+  onPick: (i: number | null) => void
 }) {
   const addedSet = useMemo(() => new Set(added), [added])
   const removedSet = useMemo(() => new Set(removed), [removed])
@@ -188,6 +196,21 @@ export function TreeView({
             : 'no new points in this stretch'}
         </span>
         <span className="spacer" />
+        {count > 1 && (
+          <>
+            <button className="wpicker-btn" onClick={() => onPick((pick - 1 + count) % count)}>
+              ◀
+            </button>
+            <button className="wpicker-btn" onClick={() => onPick((pick + 1) % count)}>
+              ▶
+            </button>
+          </>
+        )}
+        {!auto && (
+          <button className="wpicker-btn" onClick={() => onPick(null)}>
+            AUTO
+          </button>
+        )}
         <button className="wpicker-btn" onClick={() => setBox(fitBox(added.length ? added : allocated, full))}>
           FIT
         </button>

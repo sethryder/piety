@@ -39,6 +39,10 @@ export type TreeInfo = {
   added: string[]
   removed: string[]
   title: string
+  pick: number
+  count: number
+  auto: boolean
+  onPick: (i: number | null) => void
 }
 
 export type ViewProps = {
@@ -493,7 +497,7 @@ export function DenseView(p: ViewProps) {
         {p.tab === 'SOCKETS' && <SocketGroups build={p.build} gemColor={p.gemColor} skillSet={p.skillSet} setSkillSet={p.setSkillSet} />}
         {p.tab === 'TREE' &&
           (p.treeInfo ? (
-            <TreeView {...p.treeInfo} />
+            <TreeView key={p.treeInfo.pick} {...p.treeInfo} />
           ) : (
             <div className="empty">
               {p.build
@@ -532,7 +536,7 @@ export function SplitView(p: ViewProps & { mirror: boolean }) {
       </div>
       <div className="split-tree">
         {p.treeInfo ? (
-          <TreeView {...p.treeInfo} />
+          <TreeView key={p.treeInfo.pick} {...p.treeInfo} />
         ) : (
           <div className="empty">Import a build to see passive tree progression.</div>
         )}

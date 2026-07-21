@@ -383,14 +383,28 @@ export default function App() {
       }),
     []
   )
-  const treeIdx = build ? activeSpecIdx(assign, cur.act, idx === visits.length - 1) : null
+  // manual tree browsing; null = follow the route. Stale picks (re-import with
+  // fewer specs) fall back to auto instead of crashing.
+  const [treePick, setTreePick] = useState<number | null>(null)
+  const pick = treePick !== null && build && treePick < build.specs.length ? treePick : null
+  const autoTreeIdx = build ? activeSpecIdx(assign, cur.act, idx === visits.length - 1) : null
+  // no spec matched a breakpoint yet: show the first tree so browsing still works
+  const treeIdx = pick ?? autoTreeIdx ?? (build && build.specs.length ? 0 : null)
   const tree = treeIdx !== null && build ? build.specs[treeIdx] : null
 
   const treeInfo = useMemo(() => {
-    // builds stored before spec nodes were kept need a re-import
-    if (!build || treeIdx === null || !build.specs[treeIdx].nodes?.length) return null
-    return { ...treeDelta(build.specs, assign, treeIdx), title: build.specs[treeIdx].title }
-  }, [build, assign, treeIdx])
+    // builds stored before spec nodes were kept (none anywhere) need a re-import;
+    // an individual empty spec still renders so the picker stays reachable
+    if (!build || treeIdx === null || !build.specs.some((s) => s.nodes?.length)) return null
+    return {
+      ...treeDelta(build.specs, assign, treeIdx),
+      title: build.specs[treeIdx].title || `Spec ${treeIdx + 1}`,
+      pick: treeIdx,
+      count: build.specs.length,
+      auto: pick === null,
+      onPick: setTreePick
+    }
+  }, [build, assign, treeIdx, pick])
 
   function toggleOwned(gemId: string) {
     setOwned((o) => ({ ...o, [gemId]: !o[gemId] }))

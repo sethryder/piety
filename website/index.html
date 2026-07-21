@@ -58,6 +58,11 @@
   .shot { padding-bottom: 80px; }
   .shot-frame { border: 1px solid var(--border-img); border-radius: 10px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,169,78,0.06); }
   .shot-frame img { display: block; width: 100%; }
+  .view-strip { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .view-strip button { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 1.5px; padding: 8px 18px; background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text-dim); cursor: pointer; }
+  .view-strip button:hover { color: var(--gold); border-color: rgba(212,169,78,0.4); }
+  .view-strip button[aria-pressed="true"] { color: var(--gold); border-color: var(--gold); background: rgba(212,169,78,0.08); }
+  .view-caption { text-align: center; font-size: 14px; color: var(--text-dim); margin: 12px 0 0; }
 
   #features { padding-top: 24px; padding-bottom: 40px; }
   #features .kicker { margin-bottom: 28px; }
@@ -150,8 +155,15 @@
 
 <div class="wrap shot">
   <div class="shot-frame">
-    <img src="assets/screenshot.png" alt="Piety main window: route steps, gem links, passive tree, and zone map">
+    <img id="view-shot" src="assets/screenshot.png" alt="Piety split view: gem links and passive tree beside the zone-by-zone route">
   </div>
+  <div class="view-strip">
+    <button aria-pressed="true" data-src="assets/screenshot.png" data-alt="Piety split view: gem links and passive tree beside the zone-by-zone route" data-caption="Split — route, gems, and passive tree side by side, built for a second monitor.">SPLIT</button>
+    <button aria-pressed="false" data-src="assets/view-focus.png" data-alt="Piety focus view: the current zone and its steps, oversized and readable" data-caption="Focus — just the current zone and what to do there, readable mid-run.">FOCUS</button>
+    <button aria-pressed="false" data-src="assets/view-mixed.png" data-alt="Piety mixed view: current zone card with the rest of the act below" data-caption="Mixed — the current zone up top, what's coming next underneath.">MIXED</button>
+    <button aria-pressed="false" data-src="assets/view-dense.png" data-alt="Piety dense view: the whole act as a checklist with gem list tabs" data-caption="Dense — the whole act as a checklist, with gems, tree, and pace in tabs.">DENSE</button>
+  </div>
+  <p class="view-caption" id="view-caption">Split — route, gems, and passive tree side by side, built for a second monitor.</p>
 </div>
 
 <section id="features" class="wrap">
@@ -243,6 +255,18 @@
 </footer>
 
 <script>
+var strip = document.querySelectorAll('.view-strip button');
+strip.forEach(function (btn) {
+  new Image().src = btn.dataset.src; // warm the cache so swaps are instant
+  btn.addEventListener('click', function () {
+    var img = document.getElementById('view-shot');
+    img.src = btn.dataset.src;
+    img.alt = btn.dataset.alt;
+    document.getElementById('view-caption').textContent = btn.dataset.caption;
+    strip.forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+  });
+});
+
 fetch('https://api.github.com/repos/sethryder/piety/releases/latest')
   .then(function (r) { return r.ok ? r.json() : null; })
   .then(function (rel) {

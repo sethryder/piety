@@ -33,3 +33,19 @@ jobs:
       - run: npx electron-builder ${{ matrix.args }} --x64 --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notes:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need full history to find the previous tag
+      - name: Write release notes from commits since last tag
+        run: |
+          prev=$(git describe --tags --abbrev=0 "$GITHUB_REF_NAME^" 2>/dev/null || true)
+          git log --no-merges --invert-grep --grep='^v[0-9]' --pretty='- %s' \
+            "${prev:+$prev..}$GITHUB_REF_NAME" > notes.md
+          gh release edit "$GITHUB_REF_NAME" --notes-file notes.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

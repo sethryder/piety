@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piety — Path of Exile campaign leveling companion</title>
+<meta name="description" content="Piety follows your Client.txt zone by zone: route steps, gems to buy, passive tree progression from your PoB build, and act splits against your personal best.">
+<meta property="og:title" content="Piety — Path of Exile campaign leveling companion">
+<meta property="og:description" content="Route steps, gem shopping, passive tree progression, and act splits — following your Client.txt automatically. Free and open source.">
+<meta property="og:image" content="https://piety.washclof.com/assets/screenshot.png">
+<meta property="og:url" content="https://piety.washclof.com/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/piety-icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0d0f; --bg-alt: #0f1013; --bg-footer: #0a0b0d;
+    --card: #131418; --border: #222329; --border-soft: #1c1d21; --border-img: #26272b;
+    --text: #e8e6e1; --text-mid: #a5a29a; --text-dim: #8a877f; --text-faint: #5c5a54; --text-code: #c9c6bf;
+    --gold: #d4a94e; --gold-bright: #e8c470; --gold-ink: #17140c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Source Sans 3', sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: var(--gold); text-decoration: none; }
+  a:hover { color: var(--gold-bright); }
+  ::selection { background: rgba(212,169,78,0.3); }
+  .wrap { max-width: 1060px; margin: 0 auto; padding-left: 24px; padding-right: 24px; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .kicker { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 3px; color: var(--gold); }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.88em; color: var(--text-code); }
+
+  nav { display: flex; align-items: center; justify-content: space-between; max-width: 1060px; margin: 0 auto; padding: 20px 24px; }
+  .nav-brand { display: flex; align-items: center; gap: 12px; }
+  .nav-brand img { width: 30px; height: 30px; display: block; }
+  .nav-brand span { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; letter-spacing: 2px; }
+  .nav-links { display: flex; align-items: center; gap: 28px; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 1px; }
+  .nav-links a { color: var(--text-dim); }
+  .nav-links a:hover { color: var(--gold); }
+
+  header { max-width: 1060px; margin: 0 auto; padding: 72px 24px 48px; text-align: center; }
+  header .kicker { margin-bottom: 20px; }
+  h1 { font-size: 52px; font-weight: 700; line-height: 1.1; margin: 0 0 20px; letter-spacing: -0.5px; text-wrap: balance; }
+  .lede { font-size: 19px; line-height: 1.6; color: var(--text-mid); max-width: 640px; margin: 0 auto 36px; text-wrap: pretty; }
+  .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn-gold { display: inline-flex; align-items: center; gap: 10px; background: var(--gold); color: var(--gold-ink); font-weight: 700; font-size: 16px; padding: 13px 26px; border-radius: 6px; }
+  .btn-gold:hover { background: var(--gold-bright); color: var(--gold-ink); }
+  .btn-gold .ver { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500; opacity: 0.75; }
+  .btn-outline { display: inline-flex; align-items: center; gap: 10px; color: var(--gold); font-weight: 600; font-size: 16px; padding: 12px 26px; border-radius: 6px; border: 1px solid rgba(212,169,78,0.4); }
+  .btn-outline:hover { border-color: var(--gold); background: rgba(212,169,78,0.08); }
+  .release-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint); margin-top: 16px; letter-spacing: 0.5px; }
+
+  .shot { padding-bottom: 80px; }
+  .shot-frame { border: 1px solid var(--border-img); border-radius: 10px; overflow: hidden; box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,169,78,0.06); }
+  .shot-frame img { display: block; width: 100%; }
+
+  #features { padding-top: 24px; padding-bottom: 40px; }
+  #features .kicker { margin-bottom: 28px; }
+  .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .feat { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 22px 24px; }
+  .feat .tag { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 1.5px; color: var(--gold); margin-bottom: 10px; }
+  .feat .t { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+  .feat .b { font-size: 15px; line-height: 1.55; color: var(--text-mid); text-wrap: pretty; }
+
+  .overlay-callout { padding-top: 40px; padding-bottom: 80px; }
+  .overlay-card { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 40px; }
+  .overlay-card h2 { font-size: 28px; font-weight: 700; margin: 0 0 12px; }
+  .overlay-card p { font-size: 16px; line-height: 1.6; color: var(--text-mid); margin: 0; text-wrap: pretty; }
+  .overlay-card .kicker { margin-bottom: 14px; }
+  .overlay-img { border: 1px solid var(--border-img); border-radius: 8px; overflow: hidden; }
+  .overlay-img img { display: block; width: 100%; }
+
+  #download { border-top: 1px solid var(--border-soft); background: var(--bg-alt); }
+  #download .wrap { padding-top: 72px; padding-bottom: 72px; }
+  #download .kicker { margin-bottom: 28px; }
+  .dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .dl-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 26px; }
+  .dl-card .t { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .dl-card .f { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); margin-bottom: 18px; overflow-wrap: anywhere; }
+  .dl-card .note { font-size: 13px; color: var(--text-faint); margin-top: 14px; line-height: 1.5; }
+  .btn-gold.sm { font-size: 15px; padding: 10px 22px; }
+  .btn-outline.sm { font-size: 15px; padding: 9px 22px; }
+  .all-releases { font-weight: 600; font-size: 15px; }
+
+  #start { max-width: 1060px; margin: 0 auto; padding: 72px 24px; }
+  #start .kicker { margin-bottom: 28px; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .step { display: flex; gap: 18px; align-items: flex-start; }
+  .step .n { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: var(--gold); border: 1px solid rgba(212,169,78,0.35); border-radius: 6px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step .t { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .step .b { font-size: 14.5px; line-height: 1.55; color: var(--text-mid); text-wrap: pretty; }
+  .tip { margin-top: 36px; font-size: 14px; color: var(--text-dim); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; background: var(--card); line-height: 1.5; }
+  .tip strong { color: var(--text-code); }
+
+  .thanks { border-top: 1px solid var(--border-soft); }
+  .thanks .wrap { padding-top: 64px; padding-bottom: 64px; }
+  .thanks .kicker { margin-bottom: 12px; }
+  .thanks p { font-size: 15px; color: var(--text-mid); margin: 0 0 24px; max-width: 620px; line-height: 1.6; text-wrap: pretty; }
+  .credit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .credit { display: block; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; color: var(--text); }
+  .credit:hover { border-color: rgba(212,169,78,0.4); color: var(--text); }
+  .credit .n { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: var(--gold); margin-bottom: 6px; }
+  .credit .w { font-size: 13.5px; color: var(--text-dim); line-height: 1.45; }
+
+  footer { border-top: 1px solid var(--border-soft); background: var(--bg-footer); }
+  footer .wrap { padding-top: 32px; padding-bottom: 32px; display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+  footer .disclaimer { font-size: 13px; color: var(--text-faint); line-height: 1.6; max-width: 560px; }
+  footer .links { display: flex; gap: 20px; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 1px; }
+  footer .links a { color: var(--text-dim); }
+  footer .links a:hover { color: var(--gold); }
+
+  @media (max-width: 720px) {
+    h1 { font-size: 36px; }
+    .nav-links { display: none; }
+    .overlay-card { grid-template-columns: 1fr; padding: 28px; }
+    header { padding-top: 48px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <img src="assets/piety-icon.svg" alt="">
+    <span>PIETY</span>
+  </div>
+  <div class="nav-links">
+    <a href="#features">FEATURES</a>
+    <a href="#download">DOWNLOAD</a>
+    <a href="#start">GETTING STARTED</a>
+    <a href="https://github.com/sethryder/piety">GITHUB</a>
+  </div>
+</nav>
+
+<header>
+  <div class="kicker">PATH OF EXILE · CAMPAIGN COMPANION</div>
+  <h1>Level through the campaign without alt-tabbing your brain.</h1>
+  <p class="lede">Piety follows your <code>Client.txt</code> zone by zone: next route steps, gems to buy, tree progression from your PoB build, and act splits against your personal best.</p>
+  <div class="cta-row">
+    <a class="btn-gold" data-dl="win" href="https://github.com/sethryder/piety/releases">Download for Windows <span class="ver" data-rel="version"></span></a>
+    <a class="btn-outline" data-dl="linux" href="https://github.com/sethryder/piety/releases">Linux AppImage</a>
+  </div>
+  <div class="release-meta" data-rel="meta">MIT license · free &amp; open source</div>
+</header>
+
+<div class="wrap shot">
+  <div class="shot-frame">
+    <img src="assets/screenshot.png" alt="Piety main window: route steps, gem links, passive tree, and zone map">
+  </div>
+</div>
+
+<section id="features" class="wrap">
+  <div class="kicker">FEATURES</div>
+  <div class="feat-grid">
+    <div class="feat"><div class="tag">ROUTE</div><div class="t">Zone-by-zone route guide</div><div class="b">Proven leveling routes for acts 1–10 with kill, quest, waypoint, and portal steps plus layout hints. Duplicate and edit your own custom routes with live validation.</div></div>
+    <div class="feat"><div class="tag">TRACKING</div><div class="t">Follows you automatically</div><div class="b">Tails Client.txt to know where you are. Read only, no game files touched, no injection. Explicitly allowed by GGG.</div></div>
+    <div class="feat"><div class="tag">MAPS</div><div class="t">Zone layout maps</div><div class="b">Layouts from Exile-UI shown beside your steps, labeled EXACT or SAMPLE. Cycle through known layouts to match your minimap.</div></div>
+    <div class="feat"><div class="tag">GEMS</div><div class="t">Gem shopping list</div><div class="b">Built from your Path of Building import: what to buy, from which vendor, after which quest, for your class. Freebies are marked as granted.</div></div>
+    <div class="feat"><div class="tag">TREE</div><div class="t">Passive tree progression</div><div class="b">Rendered on the real skill tree: what you should have allocated by now and where the next points go, straight from your PoB tree specs.</div></div>
+    <div class="feat"><div class="tag">PACE</div><div class="t">Pace timer &amp; splits</div><div class="b">Per-act and per-zone splits against your personal best, death counters, run history, and a projected campaign finish. Starts and stops automatically.</div></div>
+    <div class="feat"><div class="tag">POB SYNC</div><div class="t">Live Path of Building sync</div><div class="b">Link a build from your local PoB saves and every save updates the app. Export codes and pobb.in links work too.</div></div>
+    <div class="feat"><div class="tag">LAB</div><div class="t">Trial &amp; lab tracking</div><div class="b">Trials of Ascendancy check off automatically. Once enough are banked, a lab reminder sticks around until you dismiss it.</div></div>
+    <div class="feat"><div class="tag">PROFILES</div><div class="t">Per-character profiles</div><div class="b">Route position, gem checklist, and trial progress are saved per character and switch automatically as you play.</div></div>
+  </div>
+</section>
+
+<section class="wrap overlay-callout">
+  <div class="overlay-card">
+    <div>
+      <div class="kicker">SINGLE MONITOR?</div>
+      <h2>A compact overlay that stays out of the way.</h2>
+      <p>A small always-on-top window with the current zone, steps, layout map, and gem reminders. Lockable so you can't drag it by accident. No hooks, no injection. It just sits over the game.</p>
+    </div>
+    <div class="overlay-img">
+      <img src="assets/screenshot-2.png" alt="Piety compact overlay window">
+    </div>
+  </div>
+</section>
+
+<section id="download">
+  <div class="wrap">
+    <div class="kicker">LATEST RELEASE</div>
+    <div class="dl-grid">
+      <div class="dl-card">
+        <div class="t">Windows</div>
+        <div class="f" data-rel="win-name">Piety-Setup-*.exe</div>
+        <a class="btn-gold sm" data-dl="win" href="https://github.com/sethryder/piety/releases">Download installer</a>
+        <div class="note">SmartScreen may warn about an unknown publisher since the build is unsigned for now.</div>
+      </div>
+      <div class="dl-card">
+        <div class="t">Linux</div>
+        <div class="f" data-rel="linux-name">Piety-*.AppImage</div>
+        <a class="btn-outline sm" data-dl="linux" href="https://github.com/sethryder/piety/releases">Download AppImage</a>
+        <div class="note"><code>chmod +x</code> and run. Steam/Proton installs are detected automatically.</div>
+      </div>
+      <div class="dl-card">
+        <div class="t" data-rel="version">Latest</div>
+        <div class="f" data-rel="meta">MIT license</div>
+        <a class="all-releases" href="https://github.com/sethryder/piety/releases">All releases →</a>
+        <div class="note">Auto-updates keep you current after the first install.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="start">
+  <div class="kicker">GETTING STARTED</div>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div><div class="t">Download &amp; run</div><div class="b">Grab the latest installer from Releases. Windows SmartScreen may warn about an unknown publisher; the build is unsigned for now.</div></div></div>
+    <div class="step"><div class="n">2</div><div><div class="t">Run the setup wizard</div><div class="b">Locate Client.txt (usually found automatically, including Steam libraries), import your PoB build or skip for a guide-only setup, and pick league start or twink routing.</div></div></div>
+    <div class="step"><div class="n">3</div><div><div class="t">Play</div><div class="b">The guide follows you as you enter zones. Route steps, gems, tree, and splits update on their own.</div></div></div>
+  </div>
+  <div class="tip">Using the overlay on top of the game? Run PoE in <strong>Windowed Fullscreen</strong>. Exclusive fullscreen draws over everything.</div>
+</section>
+
+<section class="thanks">
+  <div class="wrap">
+    <div class="kicker">DATA SOURCES &amp; THANKS</div>
+    <p>Routes, layouts, tree data, and build parsing all come from these community projects.</p>
+    <div class="credit-grid">
+      <a class="credit" href="https://github.com/HeartofPhos/exile-leveling"><div class="n">HeartofPhos/exile-leveling</div><div class="w">Route and gem/quest data (MIT)</div></a>
+      <a class="credit" href="https://github.com/Lailloken/Exile-UI"><div class="n">Lailloken/Exile-UI</div><div class="w">Zone layout images (MIT)</div></a>
+      <a class="credit" href="https://github.com/grindinggear/skilltree-export"><div class="n">grindinggear/skilltree-export</div><div class="w">Official passive tree data</div></a>
+      <a class="credit" href="https://github.com/PathOfBuildingCommunity/PathOfBuilding"><div class="n">Path of Building Community</div><div class="w">Build export parsing</div></a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="disclaimer">Piety is a fan-made tool, not affiliated with or endorsed by Grinding Gear Games. It only reads the <code>Client.txt</code> log, which is explicitly allowed for third-party tools.</div>
+    <div class="links">
+      <a href="https://github.com/sethryder/piety">GITHUB</a>
+      <a href="https://github.com/sethryder/piety/issues">ISSUES</a>
+      <a href="https://github.com/sethryder/piety/blob/main/LICENSE">MIT</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+fetch('https://api.github.com/repos/sethryder/piety/releases/latest')
+  .then(function (r) { return r.ok ? r.json() : null; })
+  .then(function (rel) {
+    if (!rel) return;
+    var assets = rel.assets || [];
+    var win = assets.find(function (a) { return /\.exe$/i.test(a.name); });
+    var lin = assets.find(function (a) { return /\.AppImage$/i.test(a.name); });
+    var version = rel.tag_name || '';
+    var date = rel.published_at ? new Date(rel.published_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+    var meta = [version, date && 'released ' + date, 'MIT license'].filter(Boolean).join(' · ');
+    function setAll(sel, fn) { document.querySelectorAll(sel).forEach(fn); }
+    if (win) {
+      setAll('[data-dl="win"]', function (el) { el.href = win.browser_download_url; });
+      setAll('[data-rel="win-name"]', function (el) { el.textContent = win.name; });
+    }
+    if (lin) {
+      setAll('[data-dl="linux"]', function (el) { el.href = lin.browser_download_url; });
+      setAll('[data-rel="linux-name"]', function (el) { el.textContent = lin.name; });
+    }
+    if (version) setAll('[data-rel="version"]', function (el) { el.textContent = version; });
+    if (meta) setAll('[data-rel="meta"]', function (el) { el.textContent = meta; });
+  })
+  .catch(function () {});
+</script>
+
+</body>
+</html>

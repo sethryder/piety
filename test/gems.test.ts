@@ -99,6 +99,19 @@ test('vendor-only offer, byName resolution, not-offered, start gem, sort tiebrea
   assert.match(beta.how, /trade or mule/)
 })
 
+test('byName resolution skips Royale duplicates in the real gem db', () => {
+  const gems = json('gems.json')
+  const visits = parseRoute(['Hand in {quest|a1q1} #Enemy at the Gate\n'], new Set())
+  const plan = planGems(
+    [{ gemId: '', name: 'Freezing Pulse', level: 1, quality: 0, enabled: true }],
+    'Witch',
+    visits,
+    { gems, colours: json('gem-colours.json'), quests: json('quests.json'), characters: {} }
+  )
+  // SkillGemFreezingPulseRoyale shares the name; the real gem's offer must win
+  assert.equal(plan[0].how, 'Reward — Tarkleigh, after Enemy at the Gate')
+})
+
 test('quest reward beats vendor purchase at the same quest', () => {
   const visits = parseRoute(
     ['Hand in {quest|q1} #Some Quest\n➞ {enter|1_1_2} #The Coast\n'],

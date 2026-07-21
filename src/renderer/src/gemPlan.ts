@@ -45,7 +45,13 @@ export function planGems(
     )
   )
 
-  const byName = new Map(Object.entries(db.gems).map(([id, g]) => [g.name, id]))
+  // Royale variants share display names with real gems but no quest offers them;
+  // letting one win the name lookup turns its gem into "trade or mule it"
+  const byName = new Map(
+    Object.entries(db.gems)
+      .filter(([id]) => !id.endsWith('Royale'))
+      .map(([id, g]) => [g.name, id])
+  )
   const unique = new Map<string, PobGem>()
   for (const g of gems) {
     const id = g.gemId || byName.get(g.name) || ''

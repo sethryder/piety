@@ -403,6 +403,16 @@ export default function App() {
     }
   }
 
+  // manual escape hatch: covers the stale-namesake case the level<=2 heuristic
+  // misses, and any other profile drift
+  function resetProfile() {
+    if (!confirm('Reset owned gems, lab progress, and route position for this character?')) return
+    setOwned({})
+    setTrials(0)
+    setHiddenLabs([])
+    jumpTo(0)
+  }
+
   function resetRun() {
     stashPartial(runRef.current)
     runRef.current = null
@@ -674,6 +684,17 @@ export default function App() {
                 >
                   EDIT ROUTES
                 </button>
+              </div>
+            </section>
+            <section className="settings-section">
+              <span className="micro-label">CHARACTER</span>
+              <button className="import-btn" onClick={resetProfile}>
+                {`RESET PROGRESS${char?.name || lastChar() ? ` — ${(char?.name || lastChar()).toUpperCase()}` : ''}`}
+              </button>
+              <div className="hint">
+                Clears owned-gem checks, lab progress, and route position for the current
+                character. Use this if a recreated character picked up its old namesake's
+                progress.
               </div>
             </section>
             <section className="settings-section">

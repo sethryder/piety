@@ -75,6 +75,16 @@ test('tree breakpoint assignment on the fixture build', () => {
   assert.equal(autoAssign('End Game Gear'), 11)
   assert.equal(autoAssign('Min Max Gear'), 11)
   assert.equal(autoAssign('my cool tree'), null)
+  // level-titled specs map to the act you hit that level in
+  assert.equal(autoAssign('Level 12'), 0)
+  assert.equal(autoAssign('Level 22'), 1)
+  assert.equal(autoAssign('Level 32 - Normal Lab'), 2)
+  assert.equal(autoAssign('Level 44'), 4)
+  assert.equal(autoAssign('Level 54 - Cruel Lab'), 6)
+  assert.equal(autoAssign('Level 60'), 7)
+  assert.equal(autoAssign('Level 67 - Merc Lab & Respec'), 9)
+  assert.equal(autoAssign('lvl 90'), 10)
+  assert.equal(autoAssign('Level 0'), null)
 
   const assign = build.specs.map((s) => autoAssign(s.title))
   const at = (act: number, done = false) => {

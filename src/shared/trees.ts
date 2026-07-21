@@ -4,7 +4,10 @@ export const BREAKPOINTS = [
   'Early Maps', 'Endgame'
 ]
 
-// Auto-match a PoB spec title ("Act 3", "Early Maps", "End Game Gear") to a breakpoint index.
+// Typical character level at the end of each act; "Level N" specs map to the act you hit N in.
+const ACT_END_LEVELS = [13, 23, 33, 40, 45, 50, 54, 60, 64, 69]
+
+// Auto-match a PoB spec title ("Act 3", "Level 44", "Early Maps", "End Game Gear") to a breakpoint index.
 export function autoAssign(title: string): number | null {
   const act = /\bact\s*(\d+)/i.exec(title)
   if (act) {
@@ -13,6 +16,13 @@ export function autoAssign(title: string): number | null {
   }
   if (/early\s*map/i.test(title)) return 10
   if (/end\s*game|endgame|min[\s-]*max/i.test(title)) return 11
+  const lvl = /\b(?:level|lvl)\s*(\d+)/i.exec(title)
+  if (lvl) {
+    const n = Number(lvl[1])
+    if (n < 1 || n > 100) return null
+    const a = ACT_END_LEVELS.findIndex((end) => n <= end)
+    return a === -1 ? 10 : a // past act 10 levels = Early Maps
+  }
   return null
 }
 

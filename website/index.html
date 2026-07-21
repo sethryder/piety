@@ -58,7 +58,7 @@
 
   #features { padding-top: 24px; padding-bottom: 40px; }
   #features .kicker { margin-bottom: 28px; }
-  .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px; }
   .feat { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 22px 24px; }
   .feat .tag { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 1.5px; color: var(--gold); margin-bottom: 10px; }
   .feat .t { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
@@ -75,7 +75,7 @@
   #download { border-top: 1px solid var(--border-soft); background: var(--bg-alt); }
   #download .wrap { padding-top: 72px; padding-bottom: 72px; }
   #download .kicker { margin-bottom: 28px; }
-  .dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px; }
   .dl-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 26px; }
   .dl-card .t { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
   .dl-card .f { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); margin-bottom: 18px; overflow-wrap: anywhere; }
@@ -86,7 +86,7 @@
 
   #start { max-width: 1060px; margin: 0 auto; padding: 72px 24px; }
   #start .kicker { margin-bottom: 28px; }
-  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 16px; }
   .step { display: flex; gap: 18px; align-items: flex-start; }
   .step .n { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; color: var(--gold); border: 1px solid rgba(212,169,78,0.35); border-radius: 6px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .step .t { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
@@ -98,7 +98,7 @@
   .thanks .wrap { padding-top: 64px; padding-bottom: 64px; }
   .thanks .kicker { margin-bottom: 12px; }
   .thanks p { font-size: 15px; color: var(--text-mid); margin: 0 0 24px; max-width: 620px; line-height: 1.6; text-wrap: pretty; }
-  .credit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .credit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 12px; }
   .credit { display: block; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; color: var(--text); }
   .credit:hover { border-color: rgba(212,169,78,0.4); color: var(--text); }
   .credit .n { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; color: var(--gold); margin-bottom: 6px; }

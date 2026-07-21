@@ -14,6 +14,7 @@ const configPath = () => join(app.getPath('userData'), 'config.json')
 function loadConfig(): {
   clientTxt?: string
   miniBounds?: Electron.Rectangle
+  mainBounds?: Electron.Rectangle & { max?: boolean }
   allowPrerelease?: boolean
 } {
   try {
@@ -196,16 +197,23 @@ ipcMain.on('mini-fit-height', (_e, h: number) => {
 })
 
 function createWindow(): void {
+  const { max, ...savedBounds } = loadConfig().mainBounds ?? { max: false }
   const win = new BrowserWindow({
     width: 1080,
     height: 640,
+    ...savedBounds,
     show: false,
     autoHideMenuBar: true,
     backgroundColor: '#0b0d10',
     webPreferences: { preload: join(__dirname, '../preload/index.js') }
   })
 
+  if (max) win.maximize()
   win.once('ready-to-show', () => win.show())
+  // getNormalBounds so a maximized close still restores sane un-maximized bounds
+  win.on('close', () =>
+    patchConfig({ mainBounds: { ...win.getNormalBounds(), max: win.isMaximized() } })
+  )
   win.on('closed', () => mini?.close())
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url)

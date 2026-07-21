@@ -23,6 +23,9 @@
     --gold: #d4a94e; --gold-bright: #e8c470; --gold-ink: #17140c;
   }
   * { box-sizing: border-box; }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
   html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: 'Source Sans 3', sans-serif; -webkit-font-smoothing: antialiased; }
   a { color: var(--gold); text-decoration: none; }
   a:hover { color: var(--gold-bright); }

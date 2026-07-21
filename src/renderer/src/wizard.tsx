@@ -170,7 +170,7 @@ export function Wizard(props: {
             <textarea
               value={pobText}
               onChange={(e) => setPobText(e.target.value)}
-              placeholder="Paste a PoB export code or pobb.in link"
+              placeholder="Paste a PoB code or a pobb.in / maxroll.gg / mobalytics.gg link"
               rows={5}
             />
             <div className="import-actions">

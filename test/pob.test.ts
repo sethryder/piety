@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { decodePobCode, pobbInId } from '../src/main/pob.ts'
+import { decodePobCode, maxrollId, mobalyticsUrl, pobbInId } from '../src/main/pob.ts'
 import { banditFlags, classMatches, levelingSet, parsePob } from '../src/shared/pob.ts'
 
 test('classMatches: base class, ascendancy, unparsed build', () => {
@@ -65,6 +65,23 @@ test('pobbInId extracts paste ids from urls, not raw codes', () => {
   assert.equal(pobbInId('https://pobb.in/AbC123_-x'), 'AbC123_-x')
   assert.equal(pobbInId('pobb.in/XYZ'), 'XYZ')
   assert.equal(pobbInId('eNrtPQlz2zaXn5NfwdWmO'), null)
+})
+
+test('maxrollId extracts planner ids from pob urls', () => {
+  assert.equal(maxrollId('https://maxroll.gg/poe/pob/tcjqpe0t'), 'tcjqpe0t')
+  assert.equal(maxrollId('maxroll.gg/poe/pob/abc_-9'), 'abc_-9')
+  assert.equal(maxrollId('https://maxroll.gg/poe/build-guides/whatever'), null)
+  assert.equal(maxrollId('eNrtPQlz2zaXn5NfwdWmO'), null)
+})
+
+test('mobalyticsUrl normalizes build guide urls', () => {
+  assert.equal(
+    mobalyticsUrl('https://mobalytics.gg/poe/builds/woolie-spineshatter-champion-leaguestart'),
+    'https://mobalytics.gg/poe/builds/woolie-spineshatter-champion-leaguestart'
+  )
+  assert.equal(mobalyticsUrl('mobalytics.gg/poe/builds/some-build'), 'https://mobalytics.gg/poe/builds/some-build')
+  assert.equal(mobalyticsUrl('https://mobalytics.gg/poe/profile/x'), null)
+  assert.equal(mobalyticsUrl('eNrtPQlz2zaXn5NfwdWmO'), null)
 })
 
 test('xml entities unescaped in titles and labels', () => {

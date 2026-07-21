@@ -1,10 +1,10 @@
-import { app, BrowserWindow, dialog, ipcMain, screen, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, net, screen, shell } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { exec } from 'node:child_process'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { findClientTxt, tailLog } from './logtail'
-import { decodePobCode, pobbInId } from './pob'
+import { decodePobCode, maxrollId, mobalyticsUrl, pobbInId } from './pob'
 import { POE_CMD, poeIsRunning } from './poe'
 import { listBuildFiles } from './pobBuilds'
 import { parsePob } from '../shared/pob'
@@ -62,6 +62,21 @@ pollPoe()
 
 ipcMain.handle('pob-import', async (_e, input: string) => {
   let code = input.trim()
+  const maxroll = maxrollId(code)
+  const moba = mobalyticsUrl(code)
+  if (maxroll) {
+    const res = await net.fetch(`https://planners.maxroll.gg/profiles/poe/${maxroll}`)
+    if (!res.ok) throw new Error(`maxroll fetch failed (${res.status})`)
+    code = JSON.parse((await res.json()).data).pobCode
+  } else if (moba) {
+    // net.fetch (Chromium stack) passes Cloudflare where node fetch gets challenged;
+    // the page HTML contains a pobb.in link, which pobbInId below picks up
+    const res = await net.fetch(moba)
+    if (!res.ok) throw new Error(`mobalytics fetch failed (${res.status})`)
+    code = await res.text()
+    // ponytail: only pobb.in-linked guides supported; raw embedded codes are escaped inconsistently
+    if (!pobbInId(code)) throw new Error('no pobb.in link found on that mobalytics page')
+  }
   const id = pobbInId(code)
   if (id) {
     const res = await fetch(`https://pobb.in/${id}/raw`)

@@ -19,11 +19,21 @@ async function get(url) {
 }
 
 // --- routes ---
+// piety shows labs as due-banners (route.ts dueLabs), not route steps: strip
+// upstream's lab detours, their lab-boss crafting rewards, and the
+// town-waypoint hop that only exists to reach a lab
+const LAB_RE = /Labyrinth_Airlock|\{ascend\||\{crafting\|\d+_Labyrinth_boss/
+const stripLabDetours = (text) => {
+  const lines = text.split('\n')
+  return lines
+    .filter((l, i) => !LAB_RE.test(l) && !(/\{waypoint\|\d+_\d+_town\}/.test(l) && LAB_RE.test(lines[i + 1] ?? '')))
+    .join('\n')
+}
 for (let i = 1; i <= 10; i++) {
   const text = await (await get(`${EL}/common/data/routes/act-${i}.txt`)).text()
-  writeFileSync(`${routesDir}act-${i}.txt`, text)
+  writeFileSync(`${routesDir}act-${i}.txt`, stripLabDetours(text))
 }
-console.log('routes: act-1..10 updated')
+console.log('routes: act-1..10 updated (lab detours stripped)')
 
 // --- data jsons ---
 for (const f of ['gems.json', 'gem-colours.json', 'quests.json', 'characters.json']) {
@@ -33,16 +43,26 @@ for (const f of ['gems.json', 'gem-colours.json', 'quests.json', 'characters.jso
 }
 
 // --- passive tree: newest plain version from exile-leveling's pin table ---
-const seeding = await (await get(`${EL}/seeding/src/build-tree/index.ts`)).text()
-const pins = [...seeding.matchAll(/"(\d+_\d+(?:_[a-z]+)*)":\s*\n?\s*"(https:[^"]+)"/g)]
-  .filter(([, v]) => /^\d+_\d+$/.test(v))
-  .map(([, v, url]) => ({ v, url }))
-if (pins.length === 0) throw new Error('no tree pins found in exile-leveling seeding file')
-const latest = pins.sort((a, b) => {
-  const [am, an] = a.v.split('_').map(Number)
-  const [bm, bn] = b.v.split('_').map(Number)
-  return am - bm || an - bn
-}).at(-1)
+// GGG releases the tree before exile-leveling pins it; override with e.g.
+//   TREE_VERSION=3_29 TREE_SHA=<skilltree-export commit> npm run update-data
+let latest
+if (process.env.TREE_VERSION && process.env.TREE_SHA) {
+  latest = {
+    v: process.env.TREE_VERSION,
+    url: `https://raw.githubusercontent.com/grindinggear/skilltree-export/${process.env.TREE_SHA}/data.json`
+  }
+} else {
+  const seeding = await (await get(`${EL}/seeding/src/build-tree/index.ts`)).text()
+  const pins = [...seeding.matchAll(/"(\d+_\d+(?:_[a-z]+)*)":\s*\n?\s*"(https:[^"]+)"/g)]
+    .filter(([, v]) => /^\d+_\d+$/.test(v))
+    .map(([, v, url]) => ({ v, url }))
+  if (pins.length === 0) throw new Error('no tree pins found in exile-leveling seeding file')
+  latest = pins.sort((a, b) => {
+    const [am, an] = a.v.split('_').map(Number)
+    const [bm, bn] = b.v.split('_').map(Number)
+    return am - bm || an - bn
+  }).at(-1)
+}
 console.log(`tree: version ${latest.v} from ${latest.url}`)
 
 // orbit 16 uses irregular angles (degrees); others are uniform

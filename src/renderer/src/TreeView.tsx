@@ -98,7 +98,9 @@ export function TreeView({
       const d = Math.hypot(n.x - mx, n.y - my)
       if (!best || d < best.d) best = { node: n, d }
     }
-    if (!best || best.d > Math.max((R[best.node.k] ?? 28) + 8 * scale, 28 * scale)) {
+    // snap reach: node radius + a small margin, floored at 16 screen px when
+    // zoomed out so tiny nodes stay hoverable without grabbing from across a gap
+    if (!best || best.d > Math.max((R[best.node.k] ?? 28) + 8 * scale, 16 * scale)) {
       setHover(null)
       return
     }

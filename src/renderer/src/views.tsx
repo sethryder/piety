@@ -337,6 +337,19 @@ function ZoneSplitRows({ run, pb, visits, act }: { run: Run; pb: Run | null; vis
   )
 }
 
+// font skull glyphs (☠/☠︎) are a lottery at 11px — color emoji on Windows,
+// tofu-ish fallbacks elsewhere; a filled silhouette stays crisp everywhere
+function Skull() {
+  return (
+    <svg className="skull" viewBox="0 0 24 24" aria-label="deaths">
+      <path
+        fillRule="evenodd"
+        d="M12 2c-4.7 0-8.5 3.6-8.5 8.2 0 2.6 1.2 4.8 3.1 6.3l.4.3V20a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-3.2l.4-.3c1.9-1.5 3.1-3.7 3.1-6.3C20.5 5.6 16.7 2 12 2Zm-3.2 6.5a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4Zm6.4 0a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4ZM12 13.5l1.4 2.6h-2.8L12 13.5Z"
+      />
+    </svg>
+  )
+}
+
 function RunHistory({ history, pb }: { history: Run[]; pb: Run | null }) {
   if (history.length === 0) return null
   return (
@@ -351,7 +364,7 @@ function RunHistory({ history, pb }: { history: Run[]; pb: Run | null }) {
                 <td className="split-act">RUN {i + 1}</td>
                 <td className="split-date">
                   {new Date(h.start).toLocaleDateString()}
-                  {totalDeaths(h) > 0 && <span className="split-deaths"> ☠{totalDeaths(h)}</span>}
+                  {totalDeaths(h) > 0 && <span className="split-deaths"> <Skull />{totalDeaths(h)}</span>}
                 </td>
                 <td className="split-time">{h.total !== null ? fmt(h.total) : '—'}</td>
                 <td className={`split-delta ${h === pb ? 'ahead' : d === null ? '' : d <= 0 ? 'ahead' : 'behind'}`}>
@@ -402,7 +415,7 @@ export function PaceView({ run, pb, history, pausedSince, visits, resetRun }: Pi
         <div className="pace-card">
           <span className="micro-label">
             RUN TIME{paused && ' · PAUSED'}
-            {totalDeaths(run) > 0 && <span className="split-deaths"> · ☠{totalDeaths(run)}</span>}
+            {totalDeaths(run) > 0 && <span className="split-deaths"> · <Skull />{totalDeaths(run)}</span>}
           </span>
           <span className="pace-clock">{fmt(elapsed)}</span>
           {delta !== null && (
@@ -447,7 +460,7 @@ export function PaceView({ run, pb, history, pausedSince, visits, resetRun }: Pi
                   <td className="split-mark">{state === 'done' ? '✓' : state === 'current' ? '▶' : '·'}</td>
                   <td className="split-act">
                     ACT {act}
-                    {(run.deaths?.[act] ?? 0) > 0 && <span className="split-deaths"> ☠{run.deaths![act]}</span>}
+                    {(run.deaths?.[act] ?? 0) > 0 && <span className="split-deaths"> <Skull />{run.deaths![act]}</span>}
                   </td>
                   <td className={`split-time ${seg !== null && best[act] !== undefined && seg < best[act] ? 'gold' : ''}`}>
                     {seg !== null ? fmt(seg) : state === 'current' ? fmt(inAct) : pbSeg !== null ? fmt(pbSeg) : '—'}

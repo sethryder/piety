@@ -503,6 +503,13 @@ body {
   color: var(--negative);
   font-weight: 400;
 }
+.skull {
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+  vertical-align: -0.15em;
+  margin-right: 2px;
+}
 
 .splits {
   border-collapse: collapse;

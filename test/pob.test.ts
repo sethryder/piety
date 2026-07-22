@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { decodePobCode, maxrollId, mobalyticsUrl, pobbInId } from '../src/main/pob.ts'
+import { decodePobCode, maxrollId, mobalyticsUrl, pastebinRawUrl, pobbInId, poeNinjaRawUrl, youtubeRedirectUrl } from '../src/main/pob.ts'
 import { banditFlags, classMatches, levelingSet, parsePob } from '../src/shared/pob.ts'
 
 test('classMatches: base class, ascendancy, unparsed build', () => {
@@ -112,6 +112,36 @@ test('maxrollId extracts planner ids from pob urls', () => {
   assert.equal(maxrollId('maxroll.gg/poe/pob/abc_-9'), 'abc_-9')
   assert.equal(maxrollId('https://maxroll.gg/poe/build-guides/whatever'), null)
   assert.equal(maxrollId('eNrtPQlz2zaXn5NfwdWmO'), null)
+})
+
+test('pastebinRawUrl normalizes paste links', () => {
+  assert.equal(pastebinRawUrl('https://pastebin.com/AbC123xy'), 'https://pastebin.com/raw/AbC123xy')
+  assert.equal(pastebinRawUrl('pastebin.com/raw/AbC123xy'), 'https://pastebin.com/raw/AbC123xy')
+  assert.equal(pastebinRawUrl('eNrtPQlz2zaXn5NfwdWmO'), null)
+})
+
+test('poeNinjaRawUrl normalizes pob share links', () => {
+  assert.equal(poeNinjaRawUrl('https://poe.ninja/pob/abc123'), 'https://poe.ninja/pob/raw/abc123')
+  assert.equal(poeNinjaRawUrl('https://poe.ninja/poe1/pob/qa'), 'https://poe.ninja/pob/raw/qa')
+  assert.equal(poeNinjaRawUrl('poe.ninja/pob/raw/abc123'), 'https://poe.ninja/pob/raw/abc123')
+  assert.equal(poeNinjaRawUrl('https://poe.ninja/poe2/pob/abc123'), null)
+  assert.equal(poeNinjaRawUrl('https://poe.ninja/builds/xyz'), null)
+  assert.equal(poeNinjaRawUrl('eNrtPQlz2zaXn5NfwdWmO'), null)
+})
+
+test('youtubeRedirectUrl unwraps video description links', () => {
+  assert.equal(
+    youtubeRedirectUrl(
+      'https://www.youtube.com/redirect?event=video_description&redir_token=x&q=https%3A%2F%2Fpobb.in%2FAbC123'
+    ),
+    'https://pobb.in/AbC123'
+  )
+  assert.equal(
+    youtubeRedirectUrl('https://youtube.com/redirect?q=https%3A%2F%2Fpastebin.com%2Fxyz&v=1'),
+    'https://pastebin.com/xyz'
+  )
+  assert.equal(youtubeRedirectUrl('https://youtube.com/watch?v=abc'), null)
+  assert.equal(youtubeRedirectUrl('https://pobb.in/AbC123'), null)
 })
 
 test('mobalyticsUrl normalizes build guide urls', () => {

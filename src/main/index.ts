@@ -4,7 +4,7 @@ import { exec } from 'node:child_process'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { findClientTxt, tailLog } from './logtail'
-import { decodePobCode, maxrollId, mobalyticsUrl, pobbInId } from './pob'
+import { decodePobCode, maxrollId, mobalyticsUrl, pastebinRawUrl, pobbInId, poeNinjaRawUrl, youtubeRedirectUrl } from './pob'
 import { POE_CMD, poeIsRunning } from './poe'
 import { listBuildFiles } from './pobBuilds'
 import { parsePob } from '../shared/pob'
@@ -61,9 +61,11 @@ setInterval(pollPoe, 15_000)
 pollPoe()
 
 ipcMain.handle('pob-import', async (_e, input: string) => {
-  let code = input.trim()
+  let code = youtubeRedirectUrl(input.trim()) ?? input.trim()
   const maxroll = maxrollId(code)
   const moba = mobalyticsUrl(code)
+  // matched on the input only — scraped page content must not re-trigger these
+  const paste = pastebinRawUrl(code) ?? poeNinjaRawUrl(code)
   if (maxroll) {
     const res = await net.fetch(`https://planners.maxroll.gg/profiles/poe/${maxroll}`)
     if (!res.ok) throw new Error(`maxroll fetch failed (${res.status})`)
@@ -76,6 +78,11 @@ ipcMain.handle('pob-import', async (_e, input: string) => {
     code = await res.text()
     // ponytail: only pobb.in-linked guides supported; raw embedded codes are escaped inconsistently
     if (!pobbInId(code)) throw new Error('no pobb.in link found on that mobalytics page')
+  } else if (paste) {
+    // net.fetch: pastebin challenges non-browser clients
+    const res = await net.fetch(paste)
+    if (!res.ok) throw new Error(`${new URL(paste).hostname} fetch failed (${res.status})`)
+    code = await res.text()
   }
   const id = pobbInId(code)
   if (id) {

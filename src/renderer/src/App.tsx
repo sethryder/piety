@@ -8,7 +8,8 @@ import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
 import { levelingSet } from '../../shared/pob'
 import { actSegment, actStart, finishRun, fmt, lastCrossing, pbOf, rebaseStart, recordActEntry, recordDeath, recordZoneEntry, startRun, worthStashing, type Run } from './pace'
-import { BandView, DenseView, FocusView, LevelChip, MixedView, PaceView, SplitView, type ViewProps } from './views'
+import { BandView, DenseView, FocusView, LevelChip, MixedView, PaceView, SplitView, useNow, type ViewProps } from './views'
+import { pushLine, useLogLines } from './logStore'
 import { Wizard, type WizardResult } from './wizard'
 import { claimProfile, lastChar, loadProfile, saveProfile } from './profiles'
 
@@ -27,6 +28,48 @@ function save<T>(key: string, value: T): T {
 
 type View = 'FOCUS' | 'MIXED' | 'DENSE' | 'SPLIT'
 
+// isolated so per-line and per-second updates re-render these chips, not the app
+function LastLogLine() {
+  const lines = useLogLines()
+  return <span className="log-line">{lines.at(-1) ?? 'tailing…'}</span>
+}
+
+function PaceChip({ run, pb, pausedSince, onClick }: { run: Run; pb: Run | null; pausedSince: number | null; onClick: () => void }) {
+  const tick = useNow(run.total === null && pausedSince === null)
+  // while paused the clock reads as of pausedSince; start is rebased on resume
+  const elapsed = run.total ?? (pausedSince ?? tick) - run.start
+  const cross = lastCrossing(run)
+  // finished runs show the final total, live runs show time-in-act
+  const chipTime = run.total ?? elapsed - (actStart(run, cross) ?? 0)
+  const pbSeg = pb ? actSegment(pb, cross) : null
+  const paceDelta =
+    run.total !== null
+      ? pb?.total != null
+        ? run.total - pb.total
+        : null
+      : pbSeg !== null
+        ? chipTime - pbSeg
+        : null
+  return (
+    <button className="footer-chip pace-chip" title="Open pace panel" onClick={onClick}>
+      <span
+        className="gem-dot"
+        style={{
+          background:
+            pausedSince !== null || paceDelta === null
+              ? '#8a93a2'
+              : paceDelta <= 0
+                ? 'var(--positive)'
+                : 'var(--negative)'
+        }}
+      />
+      A{cross} · {fmt(chipTime)}
+      {paceDelta !== null && ` · ${fmt(paceDelta, true)}`}
+      {pausedSince !== null && ' · PAUSED'}
+    </button>
+  )
+}
+
 export default function App() {
   const [build, setBuild] = useState<PobBuild | null>(() => load('pob-build', null))
   // owned gems + route position live in per-character profiles (see profiles.ts)
@@ -41,7 +84,6 @@ export default function App() {
   const [hiddenLabs, setHiddenLabs] = useState<number[]>(() => loadProfile().hiddenLabs ?? [])
   const [char, setChar] = useState<{ name: string; level: number; cls: string } | null>(null)
   const [areaLevel, setAreaLevel] = useState<number | null>(null)
-  const [logLines, setLogLines] = useState<string[]>([])
   const [logPath, setLogPath] = useState<string | null>(null)
   const [tab, setTab] = useState('GEMS')
   const [leagueStart, setLeagueStart] = useState<boolean>(() => load('league-start', true))
@@ -52,7 +94,6 @@ export default function App() {
   )
   const [run, setRun] = useState<Run | null>(() => load('pace-run', null))
   const [history, setHistory] = useState<Run[]>(() => load('pace-history', []))
-  const [now, setNow] = useState(() => Date.now())
   const [updateVersion, setUpdateVersion] = useState<string | null>(null)
   const [setupDone, setSetupDone] = useState(() => load('setup-done', false))
   const [wizardOpen, setWizardOpen] = useState(
@@ -238,7 +279,7 @@ export default function App() {
       // any live log line proves the game is up — resume before the next poll
       onPoeStatus(true, Date.now())
       if (e.type === 'line') {
-        setLogLines((l) => [...l.slice(-99), e.line])
+        pushLine(e.line)
       } else if (e.type === 'level') {
         if (e.name !== charRef.current) {
           const prof = claimProfile(e.name, idxRef.current, e.level <= 2)
@@ -313,13 +354,6 @@ export default function App() {
       offLog()
     }
   }, [visits])
-
-  // tick the run clock
-  useEffect(() => {
-    if (!run || run.total !== null) return
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
-  }, [run])
 
   // tick completed trials and show progress toward the next lab (6/9/12 trials)
   const shownVisits = useMemo(() => visits.map((v) => tickTrials(v, trials)), [visits, trials])
@@ -463,22 +497,6 @@ export default function App() {
     setWizardOpen(false)
   }
 
-  // while paused the clock reads as of pausedSince; start is rebased on resume
-  const clockNow = pausedSince ?? now
-  const elapsed = run ? (run.total ?? clockNow - run.start) : null
-  const cross = run ? lastCrossing(run) : 1
-  // footer chip: finished runs show the final total, live runs show time-in-act
-  const chipTime = run && elapsed !== null ? (run.total ?? elapsed - (actStart(run, cross) ?? 0)) : null
-  const pbSeg = run && pb ? actSegment(pb, cross) : null
-  const paceDelta = !run
-    ? null
-    : run.total !== null
-      ? pb?.total != null
-        ? run.total - pb.total
-        : null
-      : pbSeg !== null
-        ? chipTime! - pbSeg
-        : null
   const runNo = history.length + (run && run.total === null ? 1 : 0)
 
   const viewProps: ViewProps = {
@@ -493,7 +511,6 @@ export default function App() {
     owned,
     toggleOwned,
     gemColor,
-    logLines,
     build,
     tab,
     setTab,
@@ -502,8 +519,7 @@ export default function App() {
     run,
     pb,
     history,
-    now: clockNow,
-    paused: pausedSince !== null,
+    pausedSince,
     resetRun,
     treeInfo
   }
@@ -605,7 +621,6 @@ export default function App() {
               sourcePath: pobSource
             }}
             logPath={logPath}
-            lastLine={logLines.at(-1) ?? ''}
             canClose={build !== null || setupDone}
             onClose={() => setWizardOpen(false)}
             onFinish={finishWizard}
@@ -764,8 +779,7 @@ export default function App() {
               run={run}
               pb={pb}
               history={history}
-              now={clockNow}
-              paused={pausedSince !== null}
+              pausedSince={pausedSince}
               visits={visits}
               resetRun={resetRun}
             />
@@ -785,7 +799,7 @@ export default function App() {
 
       <footer className="footer">
         {tailing ? (
-          <span className="log-line">{logLines.at(-1) ?? 'tailing…'}</span>
+          <LastLogLine />
         ) : (
           <button className="log-line locate" onClick={() => window.api.pickLog()}>
             Client.txt not found — click to locate
@@ -802,27 +816,8 @@ export default function App() {
             TREE {tree.title} · {tree.nodeCount}
           </span>
         )}
-        {run && chipTime !== null && (
-          <button
-            className="footer-chip pace-chip"
-            title="Open pace panel"
-            onClick={() => setPaceOpen((o) => !o)}
-          >
-            <span
-              className="gem-dot"
-              style={{
-                background:
-                  pausedSince !== null || paceDelta === null
-                    ? '#8a93a2'
-                    : paceDelta <= 0
-                      ? 'var(--positive)'
-                      : 'var(--negative)'
-              }}
-            />
-            A{cross} · {fmt(chipTime)}
-            {paceDelta !== null && ` · ${fmt(paceDelta, true)}`}
-            {pausedSince !== null && ' · PAUSED'}
-          </button>
+        {run && (
+          <PaceChip run={run} pb={pb} pausedSince={pausedSince} onClick={() => setPaceOpen((o) => !o)} />
         )}
       </footer>
     </>

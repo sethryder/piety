@@ -1,12 +1,29 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { PobBuild } from '../../shared/pob'
 import { levelingSet } from '../../shared/pob'
 import type { GemPlanEntry } from './gemPlan'
 import { actSegment, actStart, bestSegments, fmt, lastCrossing, totalDeaths, type Run } from './pace'
 import type { LabDue, Step, ZoneVisit } from './route'
 import { levelStatus } from '../../shared/xp'
-import { TreeView } from './TreeView'
+import { useLogLines } from './logStore'
 import { ZoneLayout } from './ZoneLayout'
+
+// lazy: keeps the ~430KB passive-tree JSON out of both windows' startup parse;
+// it loads once, on the first render with a build imported
+const TreeView = lazy(() => import('./TreeView').then((m) => ({ default: m.TreeView })))
+
+// 1s display clock, ticking only while `active`; components that show run time
+// use this locally so the rest of the app doesn't re-render every second
+export function useNow(active: boolean): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!active) return
+    setNow(Date.now()) // catch up immediately on (re)activation
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [active])
+  return now
+}
 
 // Zone level vs character level; hidden in towns (no monsters, no penalty)
 export function LevelChip({
@@ -57,7 +74,6 @@ export type ViewProps = {
   owned: Record<string, boolean>
   toggleOwned: (gemId: string) => void
   gemColor: Record<string, string>
-  logLines: string[]
   build: PobBuild | null
   tab: string
   setTab: (t: string) => void
@@ -66,8 +82,7 @@ export type ViewProps = {
   run: Run | null
   pb: Run | null
   history: Run[]
-  now: number
-  paused: boolean
+  pausedSince: number | null
   resetRun: () => void
   treeInfo: TreeInfo | null
 }
@@ -284,7 +299,8 @@ function SocketGroups({ build, gemColor, skillSet, setSkillSet }: Pick<ViewProps
   )
 }
 
-function LogPanel({ logLines }: Pick<ViewProps, 'logLines'>) {
+function LogPanel() {
+  const logLines = useLogLines()
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     ref.current?.scrollTo(0, ref.current.scrollHeight)
@@ -350,10 +366,14 @@ function RunHistory({ history, pb }: { history: Run[]; pb: Run | null }) {
   )
 }
 
-export function PaceView({ run, pb, history, now, paused, visits, resetRun }: Pick<ViewProps, 'run' | 'pb' | 'history' | 'now' | 'paused' | 'visits' | 'resetRun'>) {
+export function PaceView({ run, pb, history, pausedSince, visits, resetRun }: Pick<ViewProps, 'run' | 'pb' | 'history' | 'pausedSince' | 'visits' | 'resetRun'>) {
   const [openAct, setOpenAct] = useState<number | null>(null)
   // reset is one accidental click from ending a timed run: ask twice, disarm after 3s
   const [armed, setArmed] = useState(false)
+  // while paused the clock reads as of pausedSince; start is rebased on resume
+  const paused = pausedSince !== null
+  const tick = useNow(run?.total === null && !paused)
+  const now = pausedSince ?? tick
   useEffect(() => {
     if (!armed) return
     const t = setTimeout(() => setArmed(false), 3000)
@@ -497,7 +517,9 @@ export function DenseView(p: ViewProps) {
         {p.tab === 'SOCKETS' && <SocketGroups build={p.build} gemColor={p.gemColor} skillSet={p.skillSet} setSkillSet={p.setSkillSet} />}
         {p.tab === 'TREE' &&
           (p.treeInfo ? (
-            <TreeView key={p.treeInfo.pick} {...p.treeInfo} />
+            <Suspense fallback={null}>
+              <TreeView key={p.treeInfo.pick} {...p.treeInfo} />
+            </Suspense>
           ) : (
             <div className="empty">
               {p.build
@@ -505,14 +527,13 @@ export function DenseView(p: ViewProps) {
                 : 'Import a build to see passive tree progression.'}
             </div>
           ))}
-        {p.tab === 'LOG' && <LogPanel logLines={p.logLines} />}
+        {p.tab === 'LOG' && <LogPanel />}
         {p.tab === 'PACE' && (
           <PaceView
             run={p.run}
             pb={p.pb}
             history={p.history}
-            now={p.now}
-            paused={p.paused}
+            pausedSince={p.pausedSince}
             visits={p.visits}
             resetRun={p.resetRun}
           />
@@ -536,7 +557,9 @@ export function SplitView(p: ViewProps & { mirror: boolean }) {
       </div>
       <div className="split-tree">
         {p.treeInfo ? (
-          <TreeView key={p.treeInfo.pick} {...p.treeInfo} />
+          <Suspense fallback={null}>
+            <TreeView key={p.treeInfo.pick} {...p.treeInfo} />
+          </Suspense>
         ) : (
           <div className="empty">Import a build to see passive tree progression.</div>
         )}

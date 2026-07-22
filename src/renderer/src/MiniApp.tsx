@@ -5,7 +5,7 @@ import { dueLabs, tickTrials } from './route'
 import { planGems } from './gemPlan'
 import { gemDb } from './gemData'
 import { fmt, type Run } from './pace'
-import { LevelChip, StepLine } from './views'
+import { LevelChip, StepLine, useNow } from './views'
 import { ZoneLayout } from './ZoneLayout'
 import { loadProfile } from './profiles'
 
@@ -15,6 +15,21 @@ function load<T>(key: string, fallback: T): T {
   } catch {
     return fallback
   }
+}
+
+// isolated: the 1s clock tick re-renders this chip, not the whole overlay
+function RunClock({ run, pausedSince }: { run: Run | null; pausedSince: number | null }) {
+  const tick = useNow(run?.total === null && pausedSince === null)
+  if (!run) return null
+  // freeze the clock while the game is closed; the main window rebases run.start
+  // on resume and the storage event delivers the shifted run here
+  const elapsed = run.total ?? (pausedSince ?? tick) - run.start
+  return (
+    <span className="footer-chip pace-chip">
+      {fmt(elapsed)}
+      {pausedSince !== null && run.total === null && ' ⏸'}
+    </span>
+  )
 }
 
 // Read-only companion window: state comes from localStorage (written by the main
@@ -41,9 +56,6 @@ export default function MiniApp() {
   const [routeTexts, setRouteTexts] = useState<string[]>(() => activeRouteTexts())
   const [skillSet, setSkillSet] = useState<string | null>(() => load('skill-set', null))
   const bodyRef = useRef<HTMLDivElement>(null)
-  const [now, setNow] = useState(() => Date.now())
-  // freeze the clock while the game is closed; the main window rebases run.start
-  // on resume and the storage event delivers the shifted run here
   const [pausedSince, setPausedSince] = useState<number | null>(null)
 
   // other windows' localStorage writes fire storage events here
@@ -93,12 +105,6 @@ export default function MiniApp() {
   // lock covers resize too, and reapplies the persisted state on open
   useEffect(() => window.api.setMiniLock(locked), [locked])
 
-  useEffect(() => {
-    if (!run || run.total !== null) return
-    const t = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(t)
-  }, [run])
-
   const visits = useMemo(
     () =>
       buildRoute(
@@ -118,11 +124,15 @@ export default function MiniApp() {
     return planGems(set.groups.flatMap((g) => g.gems), build.className, visits, gemDb)
   }, [build, visits, skillSet])
 
-  const cur = tickTrials(visits[Math.min(idx, visits.length - 1)], trials)
+  // memo: `cur` feeds the ResizeObserver effect's deps; a fresh object every
+  // render would tear down and re-observe the whole DOM on unrelated updates
+  const cur = useMemo(
+    () => tickTrials(visits[Math.min(idx, visits.length - 1)], trials),
+    [visits, idx, trials]
+  )
   const due = plan.filter((g) => !g.granted && g.visitIdx <= idx && !owned[g.gemId])
   const labsDue = dueLabs(cur.act, leagueStart ? trials : 12, hiddenLabs)
   const next = visits[idx + 1]
-  const elapsed = run ? (run.total ?? (pausedSince ?? now) - run.start) : null
 
   // content-driven height: measure what the body wants and ask main to fit the
   // window; width stays user-driven. mini-main stretches (flex: 1) so its own
@@ -184,12 +194,7 @@ export default function MiniApp() {
           {char ? `${char.name} · ${char.level}` : locked ? '' : 'drag me'}
         </span>
         <span className="spacer" />
-        {elapsed !== null && (
-          <span className="footer-chip pace-chip">
-            {fmt(elapsed)}
-            {pausedSince !== null && run?.total === null && ' ⏸'}
-          </span>
-        )}
+        <RunClock run={run} pausedSince={pausedSince} />
         <button className="mini-btn" title="Step route back" disabled={idx === 0} onClick={() => step(-1)}>
           ◀
         </button>

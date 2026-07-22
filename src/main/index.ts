@@ -178,7 +178,7 @@ function toggleMini(): void {
     skipTaskbar: true,
     show: false,
     backgroundColor: '#0b0d10',
-    webPreferences: { preload: join(__dirname, '../preload/index.js') }
+    webPreferences: { preload: join(__dirname, '../preload/index.js'), spellcheck: false }
   })
   mini.setAlwaysOnTop(true, 'screen-saver') // above borderless-fullscreen games
   mini.once('ready-to-show', () => mini?.show())
@@ -224,7 +224,7 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     backgroundColor: '#0b0d10',
-    webPreferences: { preload: join(__dirname, '../preload/index.js') }
+    webPreferences: { preload: join(__dirname, '../preload/index.js'), spellcheck: false }
   })
 
   if (max) win.maximize()

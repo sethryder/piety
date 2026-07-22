@@ -3,6 +3,7 @@ import type { BuildFile } from '../../main/pobBuilds'
 import { banditFlags, levelingSet, type PobBuild } from '../../shared/pob'
 import { autoAssign, BREAKPOINTS } from '../../shared/trees'
 import { buildRoute } from './routeData'
+import { useLogLines } from './logStore'
 
 export type WizardResult = {
   build: PobBuild | null // null = guide-only, no PoB import
@@ -14,12 +15,17 @@ export type WizardResult = {
 }
 
 const STEPS = ['LOG', 'IMPORT', 'TREES', 'ROUTE', 'DONE']
+
+// isolated so live log lines re-render this proof-of-tailing div, not the wizard
+function LastLine() {
+  const line = useLogLines().at(-1)
+  return line ? <div className="wlast">{line}</div> : null
+}
 const BANDITS = ['None', 'Alira', 'Kraityn', 'Oak']
 
 export function Wizard(props: {
   initial: Omit<WizardResult, 'build'> & { build: PobBuild | null }
   logPath: string | null
-  lastLine: string
   canClose: boolean
   onClose: () => void
   onFinish: (r: WizardResult) => void
@@ -120,7 +126,7 @@ export function Wizard(props: {
               {props.logPath ? 'FOUND' : 'NOT FOUND'}
             </div>
             {props.logPath && <div className="wpath">{props.logPath}</div>}
-            {props.logPath && props.lastLine && <div className="wlast">{props.lastLine}</div>}
+            {props.logPath && <LastLine />}
             {/* once the log is found the real CTA is NEXT; browse drops to secondary */}
             <button
               className={props.logPath ? 'import-btn' : 'primary'}

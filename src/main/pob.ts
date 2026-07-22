@@ -9,9 +9,24 @@ export function decodePobCode(code: string): string {
 export const pobbInId = (input: string): string | null =>
   /pobb\.in\/([A-Za-z0-9_-]+)/.exec(input)?.[1] ?? null
 
-// maxroll.gg/poe/pob/<id> planner link → profile id
+// maxroll.gg/poe/pob/<id> or /poe/planner/<id> link → profile id
 export const maxrollId = (input: string): string | null =>
-  /maxroll\.gg\/poe\/pob\/([A-Za-z0-9_-]+)/.exec(input)?.[1] ?? null
+  /maxroll\.gg\/poe\/(?:pob|planner)\/([A-Za-z0-9_-]+)/.exec(input)?.[1] ?? null
+
+// maxroll.gg/poe/build-guides/<slug> link → normalized page url; slugs can
+// nest under a category (build-guides/league-starter/<slug>)
+export const maxrollGuideUrl = (input: string): string | null => {
+  const m = /maxroll\.gg\/poe\/build-guides\/[A-Za-z0-9-]+(?:\/[A-Za-z0-9-]+)*/.exec(input)
+  return m ? `https://${m[0]}` : null
+}
+
+// guide page html → first pob-type planner embed's profile id
+// ponytail: first embed = the guide's main build; variant pickers (SC/HC,
+// endgame) would need a chooser UI
+export const maxrollProfileFromGuide = (html: string): string | null =>
+  /data-poe-profile="([A-Za-z0-9_-]+)"[^>]*data-poe-type="pob"/.exec(html)?.[1] ??
+  /maxroll\.gg\/poe\/planner\/([A-Za-z0-9_-]+)/.exec(html)?.[1] ??
+  null
 
 // mobalytics.gg build guide link → normalized page url
 export const mobalyticsUrl = (input: string): string | null => {

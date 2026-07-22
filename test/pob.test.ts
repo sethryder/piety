@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { decodePobCode, maxrollId, mobalyticsUrl, pastebinRawUrl, pobbInId, poeNinjaRawUrl, youtubeRedirectUrl } from '../src/main/pob.ts'
+import { decodePobCode, maxrollGuideUrl, maxrollId, maxrollProfileFromGuide, mobalyticsUrl, pastebinRawUrl, pobbInId, poeNinjaRawUrl, youtubeRedirectUrl } from '../src/main/pob.ts'
 import { banditFlags, classMatches, levelingSet, parsePob } from '../src/shared/pob.ts'
 
 test('classMatches: base class, ascendancy, unparsed build', () => {
@@ -107,11 +107,39 @@ test('pobbInId extracts paste ids from urls, not raw codes', () => {
   assert.equal(pobbInId('eNrtPQlz2zaXn5NfwdWmO'), null)
 })
 
-test('maxrollId extracts planner ids from pob urls', () => {
+test('maxrollId extracts planner ids from pob and planner urls', () => {
   assert.equal(maxrollId('https://maxroll.gg/poe/pob/tcjqpe0t'), 'tcjqpe0t')
   assert.equal(maxrollId('maxroll.gg/poe/pob/abc_-9'), 'abc_-9')
+  assert.equal(maxrollId('https://maxroll.gg/poe/planner/2o16wa0c#planner'), '2o16wa0c')
   assert.equal(maxrollId('https://maxroll.gg/poe/build-guides/whatever'), null)
   assert.equal(maxrollId('eNrtPQlz2zaXn5NfwdWmO'), null)
+})
+
+test('maxrollGuideUrl normalizes build guide urls', () => {
+  assert.equal(
+    maxrollGuideUrl('https://maxroll.gg/poe/build-guides/forged-frostbearer-spectre-necromancer-league-starter'),
+    'https://maxroll.gg/poe/build-guides/forged-frostbearer-spectre-necromancer-league-starter'
+  )
+  assert.equal(maxrollGuideUrl('maxroll.gg/poe/build-guides/x-1'), 'https://maxroll.gg/poe/build-guides/x-1')
+  assert.equal(
+    maxrollGuideUrl('https://maxroll.gg/poe/build-guides/league-starter/kinetic-blast-necromancer'),
+    'https://maxroll.gg/poe/build-guides/league-starter/kinetic-blast-necromancer'
+  )
+  assert.equal(maxrollGuideUrl('https://maxroll.gg/poe/pob/tcjqpe0t'), null)
+  assert.equal(maxrollGuideUrl('eNrtPQlz2zaXn5NfwdWmO'), null)
+})
+
+test('maxrollProfileFromGuide finds the first pob planner embed', () => {
+  const html = `<div data-poe-profile="aaa111" data-poe-id="planner" data-poe-type="atlas"></div>
+    <div data-poe-profile="2o16wa0c" data-poe-id="planner" data-poe-type="pob"></div>
+    <div data-poe-profile="z4c380af" data-poe-id="planner" data-poe-type="pob"></div>`
+  assert.equal(maxrollProfileFromGuide(html), '2o16wa0c')
+  // fallback: embed json planner urls when the attribute layout changes
+  assert.equal(
+    maxrollProfileFromGuide('{"url":"https://maxroll.gg/poe/planner/z4c380af#planner"}'),
+    'z4c380af'
+  )
+  assert.equal(maxrollProfileFromGuide('<html>no planners here</html>'), null)
 })
 
 test('pastebinRawUrl normalizes paste links', () => {

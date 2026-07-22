@@ -4,7 +4,7 @@ import { exec } from 'node:child_process'
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { findClientTxt, tailLog } from './logtail'
-import { decodePobCode, maxrollId, mobalyticsUrl, pastebinRawUrl, pobbInId, poeNinjaRawUrl, youtubeRedirectUrl } from './pob'
+import { decodePobCode, maxrollGuideUrl, maxrollId, maxrollProfileFromGuide, mobalyticsUrl, pastebinRawUrl, pobbInId, poeNinjaRawUrl, youtubeRedirectUrl } from './pob'
 import { POE_CMD, poeIsRunning } from './poe'
 import { listBuildFiles } from './pobBuilds'
 import { parsePob } from '../shared/pob'
@@ -62,14 +62,31 @@ pollPoe()
 
 ipcMain.handle('pob-import', async (_e, input: string) => {
   let code = youtubeRedirectUrl(input.trim()) ?? input.trim()
-  const maxroll = maxrollId(code)
+  let maxroll = maxrollId(code)
+  const guide = maxrollGuideUrl(code)
   const moba = mobalyticsUrl(code)
   // matched on the input only — scraped page content must not re-trigger these
   const paste = pastebinRawUrl(code) ?? poeNinjaRawUrl(code)
-  if (maxroll) {
-    const res = await net.fetch(`https://planners.maxroll.gg/profiles/poe/${maxroll}`)
+  if (!maxroll && guide) {
+    const res = await net.fetch(guide)
     if (!res.ok) throw new Error(`maxroll fetch failed (${res.status})`)
-    code = JSON.parse((await res.json()).data).pobCode
+    maxroll = maxrollProfileFromGuide(await res.text())
+    if (!maxroll) throw new Error('no PoB planner found on that maxroll guide')
+  }
+  if (maxroll) {
+    const profile = async (id: string) => {
+      const res = await net.fetch(`https://planners.maxroll.gg/profiles/poe/${id}`)
+      if (!res.ok) throw new Error(`maxroll fetch failed (${res.status})`)
+      return JSON.parse((await res.json()).data)
+    }
+    let data = await profile(maxroll)
+    // native planner docs (guide embeds, /poe/planner links) don't carry the
+    // code themselves; pobProfileId (top-level in older docs, under .planner
+    // in newer ones) points at the linked PoB profile
+    const linked = data.pobProfileId ?? data.planner?.pobProfileId
+    if (!data.pobCode && linked) data = await profile(linked)
+    if (!data.pobCode) throw new Error('no PoB code on that maxroll planner')
+    code = data.pobCode
   } else if (moba) {
     // net.fetch (Chromium stack) passes Cloudflare where node fetch gets challenged;
     // the page HTML contains a pobb.in link, which pobbInId below picks up

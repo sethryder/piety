@@ -5,6 +5,8 @@ directories:
 files:
   - out/**
   - package.json
+  - LICENSE
+  - THIRD_PARTY_LICENSES
 win:
   target: nsis
 nsis:

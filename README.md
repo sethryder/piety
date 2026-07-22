@@ -55,6 +55,8 @@ Game data is vendored, so the app works fully offline. `npm run update-data` ref
 - Passive tree data from [grindinggear/skilltree-export](https://github.com/grindinggear/skilltree-export)
 - Build parsing for [Path of Building Community](https://github.com/PathOfBuildingCommunity/PathOfBuilding) exports
 
+Full license texts for bundled third-party data are in [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
+
 ## Disclaimer
 
 Piety is a fan-made tool. It is not affiliated with or endorsed by Grinding Gear Games. It only reads the `Client.txt` log file, which is explicitly allowed for third party tools.

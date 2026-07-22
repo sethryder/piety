@@ -645,20 +645,73 @@ button.pace-chip:hover {
   align-items: center;
 }
 
+/* ledger layout: section labels form a right-aligned rail, controls share one
+   left edge; the gutter line between them is the page's visual spine */
+.settings .pace-full-head,
 .settings-section {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  max-width: 480px;
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+.settings-section {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  column-gap: 28px;
+  row-gap: 10px;
+  align-items: start;
+  justify-items: start;
+}
+
+.settings-section:not(:first-of-type) {
+  border-top: 1px solid var(--border-card);
+  padding-top: 16px;
+}
+
+.settings-section > .micro-label {
+  grid-column: 1;
+  justify-self: end;
+  text-align: right;
+  padding-top: 3px;
+}
+
+.settings-section > :not(.micro-label) {
+  grid-column: 2;
+  max-width: 56ch;
+}
+
+@media (max-width: 640px) {
+  .settings-section {
+    grid-template-columns: 1fr;
+    row-gap: 8px;
+  }
+  .settings-section > .micro-label {
+    justify-self: start;
+    text-align: left;
+  }
+  .settings-section > :not(.micro-label) {
+    grid-column: 1;
+  }
 }
 
 .settings-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   cursor: pointer;
   accent-color: var(--accent);
+}
+
+.settings-row input[type='checkbox'] {
+  margin-top: 4px;
+}
+
+.settings-row .sub {
+  color: var(--text-secondary);
+}
+
+.settings .hint {
+  padding-left: 0;
 }
 
 .settings a {

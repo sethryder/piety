@@ -662,7 +662,9 @@ export default function App() {
                   checked={autoView}
                   onChange={(e) => setAutoView(save('auto-view', e.target.checked))}
                 />
-                Auto view — FOCUS in the wilderness, your chosen view in town
+                <span>
+                  Auto view<span className="sub"> · FOCUS in the wilderness, your chosen view in town</span>
+                </span>
               </label>
               <label className="settings-row">
                 <input
@@ -670,7 +672,9 @@ export default function App() {
                   checked={miniAutoFit}
                   onChange={(e) => setMiniAutoFit(save('mini-autofit', e.target.checked))}
                 />
-                Overlay auto-height — the overlay window resizes to fit each step
+                <span>
+                  Overlay auto-height<span className="sub"> · resizes the overlay to fit each step</span>
+                </span>
               </label>
               <label className="settings-row">
                 <input
@@ -678,8 +682,9 @@ export default function App() {
                   checked={miniGrowUp}
                   onChange={(e) => setMiniGrowUp(save('mini-grow-up', e.target.checked))}
                 />
-                Overlay grows upward — pin the bottom edge, for docking near the bottom of the
-                screen
+                <span>
+                  Overlay grows upward<span className="sub"> · pins the bottom edge, for docking low on the screen</span>
+                </span>
               </label>
               <label className="settings-row">
                 <input
@@ -687,7 +692,9 @@ export default function App() {
                   checked={miniDue}
                   onChange={(e) => setMiniDue(save('mini-due', e.target.checked))}
                 />
-                Overlay reminders — show gem and lab banners in the overlay window
+                <span>
+                  Overlay reminders<span className="sub"> · shows gem and lab banners in the overlay</span>
+                </span>
               </label>
             </section>
             <section className="settings-section">
@@ -718,12 +725,12 @@ export default function App() {
             <section className="settings-section">
               <span className="micro-label">CHARACTER</span>
               <button className="import-btn" onClick={resetProfile}>
-                {`RESET PROGRESS${char?.name || lastChar() ? ` — ${(char?.name || lastChar()).toUpperCase()}` : ''}`}
+                {`RESET PROGRESS${char?.name || lastChar() ? ` · ${(char?.name || lastChar()).toUpperCase()}` : ''}`}
               </button>
               <div className="hint">
                 Clears owned-gem checks, lab progress, and route position for the current
-                character. Use this if a recreated character picked up its old namesake's
-                progress.
+                character. Use this if a recreated character picked up progress from an
+                earlier character with the same name.
               </div>
             </section>
             <section className="settings-section">
@@ -737,7 +744,9 @@ export default function App() {
                     window.api.setPrerelease(e.target.checked)
                   }}
                 />
-                Beta updates — install pre-release versions
+                <span>
+                  Beta updates<span className="sub"> · installs pre-release versions</span>
+                </span>
               </label>
               <button className="import-btn" onClick={checkUpdates} disabled={checking}>
                 {checking ? 'CHECKING…' : 'CHECK FOR UPDATES'}
@@ -747,13 +756,36 @@ export default function App() {
             <section className="settings-section">
               <span className="micro-label">ABOUT</span>
               <p>
-                Piety {appVersion && `v${appVersion}`} — a Path of Exile campaign leveling
+                Piety {appVersion && `v${appVersion}`}, a Path of Exile campaign leveling
                 companion.
               </p>
               <p>
                 <a href="https://github.com/sethryder/piety" target="_blank" rel="noreferrer">
                   github.com/sethryder/piety
                 </a>
+              </p>
+              <p className="hint">
+                Routes and gem data from{' '}
+                <a
+                  href="https://github.com/HeartofPhos/exile-leveling"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  exile-leveling
+                </a>
+                , zone layouts from{' '}
+                <a href="https://github.com/Lailloken/Exile-UI" target="_blank" rel="noreferrer">
+                  Exile-UI
+                </a>
+                , passive tree from{' '}
+                <a
+                  href="https://github.com/grindinggear/skilltree-export"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  GGG
+                </a>
+                . Thanks!
               </p>
             </section>
           </div>

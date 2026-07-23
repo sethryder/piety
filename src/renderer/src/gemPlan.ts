@@ -27,6 +27,7 @@ export type GemPlanEntry = {
   how: string
   visitIdx: number // earliest route position where obtainable; Infinity = never (trade/mule)
   granted: boolean // start gem / beach-chest gem: you always have it, never shop for it
+  vendor: boolean // bought from an NPC (vs quest reward / granted / trade)
 }
 
 export function planGems(
@@ -72,11 +73,12 @@ export function planGems(
             ? 'Starting gem — you begin with it'
             : 'Beach chest on the Twilight Strand',
         visitIdx: 0,
-        granted: true
+        granted: true,
+        vendor: false
       })
       continue
     }
-    let best: { pos: number; how: string } | null = null
+    let best: { pos: number; how: string; vendor: boolean } | null = null
     for (const [qid, quest] of Object.entries(db.quests)) {
       const pos = questPos.get(qid)
       if (pos === undefined || (best && pos >= best.pos)) continue
@@ -91,8 +93,8 @@ export function planGems(
         if (vendor === null && forUs(offer.vendor?.[gemId]))
           vendor = offer.vendor![gemId].npc ?? '?'
       }
-      if (reward !== null) best = { pos, how: `Reward — ${reward}, after ${quest.name}` }
-      else if (vendor !== null) best = { pos, how: `Buy — ${vendor}, after ${quest.name}` }
+      if (reward !== null) best = { pos, how: `Reward — ${reward}, after ${quest.name}`, vendor: false }
+      else if (vendor !== null) best = { pos, how: `Buy — ${vendor}, after ${quest.name}`, vendor: true }
     }
     out.push({
       gemId,
@@ -101,7 +103,8 @@ export function planGems(
       requiredLevel: info?.required_level ?? 1,
       how: best?.how ?? 'Not offered to your class — trade or mule it',
       visitIdx: best?.pos ?? Number.POSITIVE_INFINITY,
-      granted: false
+      granted: false,
+      vendor: best?.vendor ?? false
     })
   }
   return out.sort((a, b) => a.visitIdx - b.visitIdx || a.requiredLevel - b.requiredLevel)

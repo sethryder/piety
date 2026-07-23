@@ -348,6 +348,14 @@ body {
   border-top: 1px solid #1a1f27;
 }
 
+.copy-regex {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
 .pob-notes {
   margin: 0;
   font: inherit;
@@ -755,7 +763,8 @@ button.pace-chip:hover {
   cursor: pointer;
 }
 
-.update-chip {
+.update-chip,
+.copy-regex {
   background: none;
   border: 1px solid var(--accent);
   border-radius: 5px;

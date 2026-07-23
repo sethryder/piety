@@ -143,10 +143,55 @@ function DueBanners({ due, labsDue, hideLab, toggleOwned }: Pick<ViewProps, 'due
   )
 }
 
-function GemList({ plan, owned, idx, toggleOwned }: Pick<ViewProps, 'plan' | 'owned' | 'idx' | 'toggleOwned'>) {
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// The in-game search field caps at 50 chars and splits on spaces outside
+// quotes, so the whole pattern ships as one quoted group. Gems that don't
+// fit are left off and the count shows it (e.g. "4/6").
+const SEARCH_MAX = 50
+
+function CopyGemRegex({ gems }: { gems: GemPlanEntry[] }) {
+  const [state, setState] = useState<'idle' | 'ok' | 'fail'>('idle')
+  const timer = useRef<number | undefined>(undefined)
+  useEffect(() => () => clearTimeout(timer.current), [])
+  // " support" adds no selectivity to a substring match, just length
+  const names = gems.map((g) => escapeRe(g.name.toLowerCase().replace(/ support$/, '')))
+  let regex = ''
+  let used = 0
+  for (const n of names) {
+    const next = regex ? `${regex}|${n}` : n
+    if (next.length + 2 > SEARCH_MAX) break
+    regex = next
+    used++
+  }
+  if (used === 0) return null
+  return (
+    <button
+      className="copy-regex"
+      title="Paste into the vendor's search box"
+      onClick={() => {
+        clearTimeout(timer.current)
+        navigator.clipboard.writeText(`"${regex}"`).then(
+          () => setState('ok'),
+          () => setState('fail')
+        )
+        timer.current = window.setTimeout(() => setState('idle'), 1500)
+      }}
+    >
+      {state === 'ok'
+        ? 'COPIED'
+        : state === 'fail'
+          ? 'COPY FAILED'
+          : `COPY VENDOR REGEX (${used < names.length ? `${used}/${names.length}` : used})`}
+    </button>
+  )
+}
+
+function GemList({ plan, owned, idx, toggleOwned, due }: Pick<ViewProps, 'plan' | 'owned' | 'idx' | 'toggleOwned' | 'due'>) {
   if (plan.length === 0) return <div className="empty">Import a build to get a shopping list.</div>
   return (
     <div className="gems">
+      <CopyGemRegex gems={due.filter((g) => g.vendor)} />
       {plan.map((g) => {
         const status = g.granted
           ? 'GRANTED'
@@ -563,7 +608,7 @@ export function DenseView(p: ViewProps) {
         ))}
       </div>
       <div className="tab-panel">
-        {p.tab === 'GEMS' && <GemList plan={p.plan} owned={p.owned} idx={p.idx} toggleOwned={p.toggleOwned} />}
+        {p.tab === 'GEMS' && <GemList plan={p.plan} owned={p.owned} idx={p.idx} toggleOwned={p.toggleOwned} due={p.due} />}
         {p.tab === 'SOCKETS' && <SocketGroups build={p.build} gemColor={p.gemColor} skillSet={p.skillSet} setSkillSet={p.setSkillSet} />}
         {p.tab === 'TREE' &&
           (p.treeInfo ? (
@@ -611,7 +656,7 @@ export function SplitView(p: ViewProps & { mirror: boolean }) {
         <span className="micro-label">LINKS</span>
         <SocketGroups build={p.build} gemColor={p.gemColor} skillSet={p.skillSet} setSkillSet={p.setSkillSet} />
         <span className="micro-label">GEMS</span>
-        <GemList plan={p.plan} owned={p.owned} idx={p.idx} toggleOwned={p.toggleOwned} />
+        <GemList plan={p.plan} owned={p.owned} idx={p.idx} toggleOwned={p.toggleOwned} due={p.due} />
       </div>
       <div className="split-tree">
         {p.treeInfo ? (

@@ -710,8 +710,8 @@ button.pace-chip:hover {
   color: var(--text-secondary);
 }
 
-.settings .hint {
-  padding-left: 0;
+.settings-row .sub::before {
+  content: ' · ';
 }
 
 .settings a {
@@ -1515,8 +1515,12 @@ button.pace-chip:hover {
 .hint {
   color: var(--text-secondary);
   font-size: 13px;
-  padding-left: 24px;
   margin-top: 2px;
+}
+
+.steps:not(.mini-steps) .hint,
+.focus .hint {
+  padding-left: 24px;
 }
 
 .dir-arrow {

@@ -526,6 +526,7 @@ export default function App() {
   const band = shortWindow
   const tailing = logPath !== null
   const view: View = autoFocus ? 'FOCUS' : ui.view
+  const resetName = char?.name || lastChar()
 
   return (
     <>
@@ -663,7 +664,7 @@ export default function App() {
                   onChange={(e) => setAutoView(save('auto-view', e.target.checked))}
                 />
                 <span>
-                  Auto view<span className="sub"> · FOCUS in the wilderness, your chosen view in town</span>
+                  Auto view<span className="sub">FOCUS in the wilderness, your chosen view in town</span>
                 </span>
               </label>
               <label className="settings-row">
@@ -673,7 +674,7 @@ export default function App() {
                   onChange={(e) => setMiniAutoFit(save('mini-autofit', e.target.checked))}
                 />
                 <span>
-                  Overlay auto-height<span className="sub"> · resizes the overlay to fit each step</span>
+                  Overlay auto-height<span className="sub">resizes the overlay to fit each step</span>
                 </span>
               </label>
               <label className="settings-row">
@@ -683,7 +684,7 @@ export default function App() {
                   onChange={(e) => setMiniGrowUp(save('mini-grow-up', e.target.checked))}
                 />
                 <span>
-                  Overlay grows upward<span className="sub"> · pins the bottom edge, for docking low on the screen</span>
+                  Overlay grows upward<span className="sub">pins the bottom edge, for docking low on the screen</span>
                 </span>
               </label>
               <label className="settings-row">
@@ -693,7 +694,7 @@ export default function App() {
                   onChange={(e) => setMiniDue(save('mini-due', e.target.checked))}
                 />
                 <span>
-                  Overlay reminders<span className="sub"> · shows gem and lab banners in the overlay</span>
+                  Overlay reminders<span className="sub">shows gem and lab banners in the overlay</span>
                 </span>
               </label>
             </section>
@@ -725,7 +726,7 @@ export default function App() {
             <section className="settings-section">
               <span className="micro-label">CHARACTER</span>
               <button className="import-btn" onClick={resetProfile}>
-                {`RESET PROGRESS${char?.name || lastChar() ? ` · ${(char?.name || lastChar()).toUpperCase()}` : ''}`}
+                {`RESET PROGRESS${resetName ? ` · ${resetName.toUpperCase()}` : ''}`}
               </button>
               <div className="hint">
                 Clears owned-gem checks, lab progress, and route position for the current
@@ -745,7 +746,7 @@ export default function App() {
                   }}
                 />
                 <span>
-                  Beta updates<span className="sub"> · installs pre-release versions</span>
+                  Beta updates<span className="sub">installs pre-release versions</span>
                 </span>
               </label>
               <button className="import-btn" onClick={checkUpdates} disabled={checking}>
@@ -756,7 +757,7 @@ export default function App() {
             <section className="settings-section">
               <span className="micro-label">ABOUT</span>
               <p>
-                Piety {appVersion && `v${appVersion}`}, a Path of Exile campaign leveling
+                Piety{appVersion && ` v${appVersion}`}, a Path of Exile campaign leveling
                 companion.
               </p>
               <p>

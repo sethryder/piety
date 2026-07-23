@@ -11,13 +11,15 @@ export type PobBuild = {
   activeSkillSet: string | null
   skillSets: PobSkillSet[]
   specs: TreeSpec[]
+  notes: string
 }
 
 // the level-up log line carries the base class, or the ascendancy name once ascended
 export const classMatches = (cls: string, b: Pick<PobBuild, 'className' | 'ascendancy'>) =>
   b.className === '' || cls === b.className || cls === b.ascendancy
 
-const stripColors = (s: string) => s.replace(/\^x[0-9a-fA-F]{6}|\^\d/g, '')
+export const COLOR_CODE = /\^x[0-9a-fA-F]{6}|\^\d/g
+export const stripColors = (s: string) => s.replace(COLOR_CODE, '')
 
 const unescapeXml = (s: string) =>
   s
@@ -61,6 +63,11 @@ function parseSkills(block: string): SocketGroup[] {
 
 // ponytail: regex over PoB's machine-generated XML; a real XML parser only if PoB output ever surprises us
 export function parsePob(xml: string): PobBuild {
+  // color codes kept; the notes tab renders them. Join all blocks — the strip below removes all of them.
+  const notes = [...xml.matchAll(/<Notes>([\s\S]*?)<\/Notes>/g)]
+    .map((m) => unescapeXml(m[1]).trim())
+    .filter(Boolean)
+    .join('\n\n')
   xml = xml.replace(/<Notes>[\s\S]*?<\/Notes>/g, '')
 
   const build = attrs(/<Build\b([^>]*)>/.exec(xml)?.[1] ?? '')
@@ -91,7 +98,8 @@ export function parsePob(xml: string): PobBuild {
     bandit: build.bandit ?? null,
     activeSkillSet: skillsTag.activeSkillSet ?? null,
     skillSets,
-    specs
+    specs,
+    notes
   }
 }
 

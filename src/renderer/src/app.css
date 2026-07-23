@@ -348,6 +348,13 @@ body {
   border-top: 1px solid #1a1f27;
 }
 
+.pob-notes {
+  margin: 0;
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
 /* ---- BAND (⅓ snap) ---- */
 .band {
   display: grid;

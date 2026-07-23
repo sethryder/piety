@@ -60,6 +60,18 @@ test('labeled gemless groups kept as separators, unlabeled ones dropped', () => 
   assert.equal(groups[1].gems[0].name, 'Fireball') // separator didn't swallow it
 })
 
+test('notes extracted with entities unescaped, color codes kept for rendering', () => {
+  const xml = `<PathOfBuilding><Build className="Witch"/>
+  <Notes>^7Buy a ^x00FF00Sapphire Ring ^7for &quot;Merveil&quot; &amp; co.</Notes>
+</PathOfBuilding>`
+  assert.equal(parsePob(xml).notes, '^7Buy a ^x00FF00Sapphire Ring ^7for "Merveil" & co.')
+  assert.equal(parsePob('<PathOfBuilding><Build className="Witch"/></PathOfBuilding>').notes, '')
+  // multiple Notes blocks all survive; empty ones are skipped
+  const multi = `<PathOfBuilding><Build className="Witch"/>
+  <Notes>  </Notes><Notes>first</Notes><Notes>second</Notes></PathOfBuilding>`
+  assert.equal(parsePob(multi).notes, 'first\n\nsecond')
+})
+
 test('levelingSet prefers an explicitly picked set id', () => {
   const mk = (id: string, title: string) => ({ id, title, groups: [] })
   const build = {

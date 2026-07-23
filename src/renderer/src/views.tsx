@@ -1,6 +1,6 @@
 import { Fragment, lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { PobBuild } from '../../shared/pob'
-import { levelingSet } from '../../shared/pob'
+import { COLOR_CODE, levelingSet, stripColors } from '../../shared/pob'
 import type { GemPlanEntry } from './gemPlan'
 import { actSegment, actStart, bestSegments, fmt, lastCrossing, totalDeaths, type Run } from './pace'
 import type { LabDue, Step, ZoneVisit } from './route'
@@ -490,6 +490,43 @@ export function PaceView({ run, pb, history, pausedSince, visits, resetRun }: Pi
   )
 }
 
+// PoB's ^0-^9 palette (SimpleGraphic); ^7 is default text so it inherits
+const CARET_COLORS = ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '', '#B3B3B3', '#666666']
+
+// dark colors vanish on the dark panel; blend toward white until bright enough
+function visibleColor(hex: string): string {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  const min = 120
+  if (lum >= min) return hex
+  const t = (min - lum) / (255 - lum)
+  const mix = (c: number) => Math.round(c + (255 - c) * t)
+  return `rgb(${mix(r)},${mix(g)},${mix(b)})`
+}
+
+const NOTES_SPLIT = new RegExp(`(${COLOR_CODE.source})`, 'g')
+
+function PobNotes({ text }: { text: string }) {
+  let color: string | undefined
+  return (
+    <pre className="pob-notes">
+      {text.split(NOTES_SPLIT).map((part, i) => {
+        // split with a capture group: odd indices are the color codes, even are text
+        if (i % 2) {
+          const hex = part[1] === 'x' ? '#' + part.slice(2) : CARET_COLORS[+part[1]]
+          color = hex ? visibleColor(hex) : undefined
+          return null
+        }
+        return part ? (
+          <span key={i} style={{ color }}>
+            {part}
+          </span>
+        ) : null
+      })}
+    </pre>
+  )
+}
+
 export function DenseView(p: ViewProps) {
   const curRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -519,7 +556,7 @@ export function DenseView(p: ViewProps) {
         })}
       </div>
       <div className="tab-strip">
-        {['GEMS', 'SOCKETS', 'TREE', 'LOG', 'PACE'].map((t) => (
+        {['GEMS', 'SOCKETS', 'TREE', 'NOTES', 'LOG', 'PACE'].map((t) => (
           <button key={t} className={`tab ${p.tab === t ? 'active' : ''}`} onClick={() => p.setTab(t)}>
             {t}
           </button>
@@ -538,6 +575,14 @@ export function DenseView(p: ViewProps) {
               {p.build
                 ? 'Re-run SETUP and re-parse your PoB to enable the tree view.'
                 : 'Import a build to see passive tree progression.'}
+            </div>
+          ))}
+        {p.tab === 'NOTES' &&
+          (p.build && stripColors(p.build.notes).trim() ? (
+            <PobNotes text={p.build.notes} />
+          ) : (
+            <div className="empty">
+              {p.build ? 'This build has no notes. Re-parse your PoB if you added some.' : 'Import a build to see its notes.'}
             </div>
           ))}
         {p.tab === 'LOG' && <LogPanel />}

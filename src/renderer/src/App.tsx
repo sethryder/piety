@@ -83,7 +83,7 @@ export default function App() {
   const [trials, setTrials] = useState(() => loadProfile().trials ?? 0)
   const [hiddenLabs, setHiddenLabs] = useState<number[]>(() => loadProfile().hiddenLabs ?? [])
   const [char, setChar] = useState<{ name: string; level: number; cls: string } | null>(null)
-  const [areaLevel, setAreaLevel] = useState<number | null>(null)
+  const [areaLevel, setAreaLevel] = useState<number | null>(() => load('area-level', null))
   const [logPath, setLogPath] = useState<string | null>(null)
   const [tab, setTab] = useState('GEMS')
   const [leagueStart, setLeagueStart] = useState<boolean>(() => load('league-start', true))
@@ -248,7 +248,7 @@ export default function App() {
   // arrow keys step the route; the header ◀ ▶ targets are small for mid-game use
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (wizardOpen || settingsOpen || routesOpen) return
+      if (wizardOpen || settingsOpen || routesOpen || paceOpen) return
       const t = e.target as HTMLElement
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)) return
       if (e.key === 'ArrowLeft' && idxRef.current > 0) {
@@ -262,7 +262,7 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visits, wizardOpen, settingsOpen, routesOpen])
+  }, [visits, wizardOpen, settingsOpen, routesOpen, paceOpen])
 
   // route options changed (league start / bandit): the visits array may have
   // shrunk, so clamp the tracked position
@@ -315,11 +315,15 @@ export default function App() {
         // 'gen' (area id, language-independent, new instances only) is the primary
         // signal; 'enter' (localized name, every entry) is the fallback and a no-op
         // when 'gen' already moved us
-        if (e.type === 'gen') setAreaLevel(e.areaLevel)
         const ni =
           e.type === 'gen'
             ? advanceById(visits, idxRef.current, e.areaId)
             : advance(visits, idxRef.current, e.zone)
+        if (e.type === 'gen') setAreaLevel(save('area-level', e.areaLevel))
+        // moved by re-entering an existing instance: its level is unknown
+        // (only 'gen' carries one) — hide the ZL chip rather than lie.
+        // persisted so the mini overlay's chip stays honest too
+        else if (ni !== idxRef.current) setAreaLevel(save('area-level', null))
         const nowMs = Date.now()
         idxRef.current = ni
         setIdx(ni)

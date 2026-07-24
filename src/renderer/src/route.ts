@@ -49,7 +49,8 @@ function renderHint(text: string): string {
     .replace(FRAG_RE, (_m, type: string, rawArg?: string) => {
       const arg = rawArg ?? ''
       if (type === 'dir') return ARROWS[Math.round(Number(arg) / 45) % 8] ?? arg
-      return arg
+      // argless tokens ({waypoint}) read as their name, not as a hole in the sentence
+      return arg || type
     })
     .trim()
 }

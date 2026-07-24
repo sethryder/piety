@@ -156,6 +156,11 @@ test('dir arrows: cardinal, diagonal, wraparound, non-numeric', () => {
   assert.deepEqual(v[0].steps[0].hints, ['↑', '↖', '↑', 'weird'])
 })
 
+test('argless hint tokens render as their name', () => {
+  const v = parseRoute(['Kill {kill|Boss}\n    #sub Go in same direction as {waypoint}\n'], new Set())
+  assert.deepEqual(v[0].steps[0].hints, ['Go in same direction as waypoint'])
+})
+
 test('portal|use before any portal|set moves nowhere', () => {
   const v = parseRoute(['Take {portal|use}\n➞ {enter|1_1_2} #The Coast\n'], new Set())
   assert.deepEqual(v.map((x) => x.zone), ['The Twilight Strand', 'The Coast'])

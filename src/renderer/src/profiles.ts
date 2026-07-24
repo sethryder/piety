@@ -45,7 +45,9 @@ export function claim(
   curIdx: number,
   newChar = false
 ): { all: Record<string, Profile>; prof: Profile } {
-  const fresh = { owned: {}, idx: curIdx }
+  // a brand-new character starts at the beach, not wherever the previous
+  // character left off; mid-campaign adoption keeps the current position
+  const fresh = { owned: {}, idx: newChar ? 0 : curIdx }
   const prof = newChar ? (all[''] ?? fresh) : (all[name] ?? all[''] ?? fresh)
   const next = { ...all, [name]: prof }
   delete next['']

@@ -69,9 +69,10 @@ test('a recreated character does not inherit the deleted namesake profile', () =
   assert.deepEqual(next.Fresh, prof)
 })
 
-test('newChar without a pending profile starts fresh, ignoring the namesake', () => {
-  const { prof } = claim({ Fresh: { owned: { g1: true }, idx: 90 } }, 'Fresh', 1, true)
-  assert.deepEqual(prof, { owned: {}, idx: 1 })
+test('newChar without a pending profile starts fresh at the beach, ignoring the namesake', () => {
+  // curIdx is the PREVIOUS character's position; a new char must not inherit it
+  const { prof } = claim({ Fresh: { owned: { g1: true }, idx: 90 } }, 'Fresh', 55, true)
+  assert.deepEqual(prof, { owned: {}, idx: 0 })
 })
 
 test('named profile wins over a stale pending one', () => {

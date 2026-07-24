@@ -522,6 +522,9 @@ export default function App() {
     // guide-only: SPLIT is mostly empty panels without a build, so drop to MIXED
     if (r.build === null && ui.view === 'SPLIT') setUi({ ...ui, view: 'MIXED' })
     setBuild(save('pob-build', r.build))
+    // a set id picked for the previous build must not select an arbitrary set
+    // in the new one; null falls back to the "levelling" heuristic
+    setSkillSetState(save('skill-set', null))
     setTreeAssign(save('tree-assign', r.treeAssign))
     setLeagueStart(save('league-start', r.leagueStart))
     setLibrary(save('library', r.library))

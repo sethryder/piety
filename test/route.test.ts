@@ -100,6 +100,12 @@ test('advanceById tracks by area id', () => {
   // planned town transitions are always adjacent to the current visit
   assert.equal(advanceById(v, 5, '1_1_town'), 5)
   assert.equal(advance(v, 5, "Lioneye's Watch"), 5)
+  // a tracker lagging 2 behind still advances into a scheduled town stop
+  const lag = parseRoute(
+    ['Kill {kill|Hillock}\n➞ {enter|1_1_2} #The Coast\n➞ {enter|1_1_3} #The Mud Flats\n➞ {enter|1_1_town} #Lioneye\'s Watch\n'],
+    new Set()
+  )
+  assert.equal(advanceById(lag, 1, '1_1_town'), 3)
 })
 
 test('equidistant matches prefer forward', () => {

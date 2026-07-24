@@ -949,6 +949,11 @@ button.pace-chip:hover {
   line-height: 1.35;
 }
 
+/* the PoB-chosen mastery effect */
+.tree-tip-mastery {
+  color: var(--positive);
+}
+
 .tree-svg:active {
   cursor: grabbing;
 }

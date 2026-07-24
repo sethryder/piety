@@ -2,7 +2,12 @@
 export type PobGem = { gemId: string; name: string; level: number; quality: number; enabled: boolean }
 export type SocketGroup = { slot: string; label: string; enabled: boolean; gems: PobGem[] }
 export type PobSkillSet = { id: string; title: string; groups: SocketGroup[] }
-export type TreeSpec = { title: string; nodeCount: number; nodes: string[] }
+export type TreeSpec = {
+  title: string
+  nodeCount: number
+  nodes: string[]
+  mastery: Record<string, string> // node id → chosen effect id
+}
 export type PobBuild = {
   className: string
   ascendancy: string
@@ -88,7 +93,9 @@ export function parsePob(xml: string): PobBuild {
   for (const sp of xml.matchAll(/<Spec\b([^>]*)>/g)) {
     const a = attrs(sp[1])
     const nodes = a.nodes ? a.nodes.split(',') : []
-    specs.push({ title: stripColors(a.title ?? ''), nodeCount: nodes.length, nodes })
+    const mastery: Record<string, string> = {}
+    for (const m of (a.masteryEffects ?? '').matchAll(/\{(\d+),(\d+)\}/g)) mastery[m[1]] = m[2]
+    specs.push({ title: stripColors(a.title ?? ''), nodeCount: nodes.length, nodes, mastery })
   }
 
   return {

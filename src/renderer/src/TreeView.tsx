@@ -5,6 +5,7 @@ type TreeData = {
   bounds: { minX: number; minY: number; maxX: number; maxY: number }
   nodes: Record<string, TreeNode>
   edges: [string, string][]
+  masteryEffects?: Record<string, string[]> // effect id → stat lines
 }
 
 // newest vendored tree version wins; update-data.mjs keeps exactly one file around
@@ -46,6 +47,7 @@ export function TreeView({
   allocated,
   added,
   removed,
+  mastery,
   title,
   pick,
   count,
@@ -55,6 +57,7 @@ export function TreeView({
   allocated: Set<string>
   added: string[]
   removed: string[]
+  mastery: Record<string, string>
   title: string
   pick: number
   count: number
@@ -72,9 +75,13 @@ export function TreeView({
   const [box, setBox] = useState<Box>(() =>
     fitBox(added.length ? added : allocated, full)
   )
-  const [hover, setHover] = useState<{ x: number; y: number; r: number; node: TreeNode } | null>(
-    null
-  )
+  const [hover, setHover] = useState<{
+    x: number
+    y: number
+    r: number
+    id: string
+    node: TreeNode
+  } | null>(null)
   const [hlId, setHlId] = useState<string | null>(null)
   const drag = useRef<{ px: number; py: number } | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -92,11 +99,11 @@ export function TreeView({
     if (!svg || !wrap || !ctm) return
     const scale = 1 / ctm.a // tree units per screen px
     const { x: mx, y: my } = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse())
-    let best: { node: TreeNode; d: number } | null = null
+    let best: { id: string; node: TreeNode; d: number } | null = null
     for (const [id, n] of nodeList) {
       if (n.k === 'm' && !allocated.has(id) && !removedSet.has(id)) continue
       const d = Math.hypot(n.x - mx, n.y - my)
-      if (!best || d < best.d) best = { node: n, d }
+      if (!best || d < best.d) best = { id, node: n, d }
     }
     // snap reach: node radius + a small margin, floored at 16 screen px when
     // zoomed out so tiny nodes stay hoverable without grabbing from across a gap
@@ -110,6 +117,7 @@ export function TreeView({
       x: sp.x - wrapRect.left,
       y: sp.y - wrapRect.top,
       r: Math.max((R[best.node.k] ?? 28) + 22, 14 * scale),
+      id: best.id,
       node: best.node
     })
   }
@@ -270,6 +278,12 @@ export function TreeView({
                 {s}
               </div>
             ))}
+            {hover.node.k === 'm' &&
+              tree.masteryEffects?.[mastery[hover.id]]?.map((s, i) => (
+                <div key={i} className="tree-tip-stat tree-tip-mastery">
+                  {s}
+                </div>
+              ))}
           </div>
         )}
       </div>

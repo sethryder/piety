@@ -25,6 +25,10 @@ test('decodes and parses a real pobb.in export', () => {
   assert.equal(build.specs.length, 12)
   assert.ok(build.specs.some((s) => s.title === 'Act 1'), 'color codes stripped from titles')
   assert.ok(build.specs.every((s) => s.nodeCount > 0))
+  // mastery picks: node id → effect id, both on-tree
+  const withMastery = build.specs.find((s) => Object.keys(s.mastery).length > 0)
+  assert.ok(withMastery, 'fixture has mastery picks')
+  assert.equal(withMastery!.mastery['43647'], '11723')
   assert.equal(build.skillSets.length, 4)
 
   const lvl = levelingSet(build)

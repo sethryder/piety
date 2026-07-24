@@ -458,6 +458,8 @@ export default function App() {
     if (!build || treeIdx === null || !build.specs.some((s) => s.nodes?.length)) return null
     return {
       ...treeDelta(build.specs, assign, treeIdx),
+      // builds parsed before mastery support lack the field
+      mastery: build.specs[treeIdx].mastery ?? {},
       title: build.specs[treeIdx].title || `Spec ${treeIdx + 1}`,
       pick: treeIdx,
       count: build.specs.length,

@@ -55,6 +55,7 @@ export type TreeInfo = {
   allocated: Set<string>
   added: string[]
   removed: string[]
+  mastery: Record<string, string>
   title: string
   pick: number
   count: number

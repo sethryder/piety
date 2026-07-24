@@ -71,6 +71,8 @@ const raw = await (await get(latest.url)).json()
 const { orbitRadii, skillsPerOrbit } = raw.constants
 
 const nodes = {}
+// effect id → stat lines, for showing the PoB-chosen mastery effect on hover
+const masteryEffects = {}
 for (const [id, n] of Object.entries(raw.nodes)) {
   if (id === 'root' || n.group === undefined || n.orbit === undefined) continue
   const group = raw.groups[n.group]
@@ -94,6 +96,7 @@ for (const [id, n] of Object.entries(raw.nodes)) {
     ...(n.ascendancyName ? { a: 1 } : {}),
     ...(n.stats?.length ? { s: n.stats } : {})
   }
+  for (const e of n.masteryEffects ?? []) masteryEffects[e.effect] = e.stats
 }
 
 const seen = new Set()
@@ -121,7 +124,8 @@ const out = {
   version: latest.v,
   bounds: { minX: raw.min_x, minY: raw.min_y, maxX: raw.max_x, maxY: raw.max_y },
   nodes,
-  edges
+  edges,
+  masteryEffects
 }
 writeFileSync(`${dataDir}tree-${latest.v}.json`, JSON.stringify(out))
 console.log(

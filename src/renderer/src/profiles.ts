@@ -15,6 +15,9 @@ function read<T>(key: string, fallback: T): T {
 
 export const lastChar = (): string => read('last-char', '')
 
+export const hasProfile = (name: string): boolean =>
+  name in read<Record<string, Profile>>('profiles', {})
+
 export function loadProfile(name = lastChar()): Profile {
   // legacy: owned-gems predates profiles; adopt it as the starting profile
   return (

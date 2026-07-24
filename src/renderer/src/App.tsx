@@ -11,7 +11,7 @@ import { actSegment, actStart, finishRun, fmt, lastCrossing, pbOf, rebaseStart, 
 import { BandView, DenseView, FocusView, LevelChip, MixedView, PaceView, SplitView, useNow, type ViewProps } from './views'
 import { pushLine, useLogLines } from './logStore'
 import { Wizard, type WizardResult } from './wizard'
-import { claimProfile, lastChar, loadProfile, saveProfile } from './profiles'
+import { claimProfile, hasProfile, lastChar, loadProfile, saveProfile } from './profiles'
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -281,6 +281,16 @@ export default function App() {
       if (e.type === 'line') {
         pushLine(e.line)
       } else if (e.type === 'level') {
+        // party and guild members' level lines land in Client.txt too; only
+        // switch to a known alt (has a profile), a brand-new character
+        // (level <= 2 fires exactly once), or the first name after a fresh
+        // Twilight Strand. Everything else is someone else's character.
+        // ponytail: a partied teammate's own level-2 line can still claim a
+        // pending profile; filtering on "has joined the area" names is the
+        // upgrade if that bites
+        const ours =
+          e.name === charRef.current || charRef.current === '' || e.level <= 2 || hasProfile(e.name)
+        if (!ours) return
         if (e.name !== charRef.current) {
           const prof = claimProfile(e.name, idxRef.current, e.level <= 2)
           charRef.current = e.name

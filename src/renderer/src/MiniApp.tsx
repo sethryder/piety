@@ -7,7 +7,7 @@ import { gemDb } from './gemData'
 import { fmt, type Run } from './pace'
 import { LevelChip, StepLine, useNow } from './views'
 import { ZoneLayout } from './ZoneLayout'
-import { loadProfile } from './profiles'
+import { hasProfile, lastChar, loadProfile } from './profiles'
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -92,7 +92,12 @@ export default function MiniApp() {
     const offPoe = window.api.onPoeStatus((v) => setPausedSince(v ? null : Date.now()))
     const offLog = window.api.onLog((e) => {
       setPausedSince(null) // any live log line proves the game is up
-      if (e.type === 'level') setChar({ name: e.name, level: e.level })
+      // same gate as the main window: party/guild level lines are not ours
+      if (
+        e.type === 'level' &&
+        (e.name === lastChar() || lastChar() === '' || e.level <= 2 || hasProfile(e.name))
+      )
+        setChar({ name: e.name, level: e.level })
       if (e.type === 'gen') setAreaLevel(e.areaLevel)
     })
     return () => {

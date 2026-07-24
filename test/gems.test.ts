@@ -112,6 +112,26 @@ test('byName resolution skips Royale duplicates in the real gem db', () => {
   assert.equal(plan[0].how, 'Reward — Tarkleigh, after Enemy at the Gate')
 })
 
+test('supports resolve by their PoB name (no " Support" suffix); active gems win collisions', () => {
+  const gems = json('gems.json')
+  const visits = parseRoute(['Hand in {quest|a1q1} #Enemy at the Gate\n'], new Set())
+  const plan = planGems(
+    [
+      { gemId: '', name: 'Added Fire Damage', level: 1, quality: 0, enabled: true },
+      { gemId: '', name: 'Barrage', level: 1, quality: 0, enabled: true }
+    ],
+    'Witch',
+    visits,
+    { gems, colours: json('gem-colours.json'), quests: json('quests.json'), characters: {} }
+  )
+  assert.equal(
+    plan.find((g) => g.name === 'Added Fire Damage Support')?.gemId,
+    'Metadata/Items/Gems/SupportGemAddedFireDamage'
+  )
+  // "Barrage" names both an active gem and a support; the active one wins
+  assert.ok(plan.some((g) => g.gemId === 'Metadata/Items/Gems/SkillGemBarrage'))
+})
+
 test('quest reward beats vendor purchase at the same quest', () => {
   const visits = parseRoute(
     ['Hand in {quest|q1} #Some Quest\n➞ {enter|1_1_2} #The Coast\n'],

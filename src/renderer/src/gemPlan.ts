@@ -53,6 +53,14 @@ export function planGems(
       .filter(([id]) => !id.endsWith('Royale'))
       .map(([id, g]) => [g.name, id])
   )
+  // PoB nameSpec omits the " Support" suffix; alias the stripped names where
+  // they don't collide with a real gem (e.g. Barrage vs Barrage Support —
+  // ambiguous in PoB too, so the active gem wins)
+  for (const [id, g] of Object.entries(db.gems)) {
+    if (id.endsWith('Royale') || !g.is_support) continue
+    const short = g.name.replace(/ Support$/, '')
+    if (!byName.has(short)) byName.set(short, id)
+  }
   const unique = new Map<string, PobGem>()
   for (const g of gems) {
     const id = g.gemId || byName.get(g.name) || ''

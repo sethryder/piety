@@ -1010,6 +1010,19 @@ button.pace-chip:hover {
   flex: 1;
 }
 
+/* narrow overlay: shed chips before the buttons get pushed off the edge */
+@media (max-width: 320px) {
+  .mini-bar .lvl-chip {
+    display: none;
+  }
+}
+
+@media (max-width: 280px) {
+  .mini-bar .pace-chip {
+    display: none;
+  }
+}
+
 .mini-char {
   color: var(--text-secondary);
   font-size: 11.5px;
@@ -1760,6 +1773,8 @@ button.pace-chip:hover {
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .lvl-chip {

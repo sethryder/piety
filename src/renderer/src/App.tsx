@@ -118,6 +118,7 @@ export default function App() {
   const [miniAutoFit, setMiniAutoFit] = useState<boolean>(() => load('mini-autofit', true))
   const [miniDue, setMiniDue] = useState<boolean>(() => load('mini-due', true))
   const [miniGrowUp, setMiniGrowUp] = useState<boolean>(() => load('mini-grow-up', false))
+  const [labZoom, setLabZoom] = useState<boolean>(() => load('lab-zoom', true))
   // auto view: FOCUS while in the wilderness, the user's chosen view in town.
   // Transient — a manual view click overrides until the next zone change.
   const [autoFocus, setAutoFocus] = useState(false)
@@ -204,6 +205,8 @@ export default function App() {
   const runRef = useRef(run)
   const charRef = useRef(lastChar())
   const inLabRef = useRef(false)
+  // state twin of inLabRef: the tree view zooms to the ascendancy while in lab
+  const [inLab, setInLab] = useState(false)
 
   // persist the active profile on every change; char switches redirect charRef first
   useEffect(() => {
@@ -327,6 +330,7 @@ export default function App() {
             : advance(visits, idxRef.current, e.zone)
         if (e.type === 'gen') {
           inLabRef.current = /Labyrinth/i.test(e.areaId)
+          setInLab(inLabRef.current)
           setAreaLevel(save('area-level', e.areaLevel))
         }
         // moved by re-entering an existing instance: its level is unknown
@@ -473,9 +477,13 @@ export default function App() {
       pick: treeIdx,
       count: build.specs.length,
       auto: pick === null,
-      onPick: setTreePick
+      onPick: setTreePick,
+      // in lab: zoom the tree onto the ascendancy. Pool nodes from every spec so
+      // the first lab focuses correctly even if the active spec has no asc points yet
+      focusAsc: inLab && labZoom,
+      ascPool: [...new Set(build.specs.flatMap((s) => s.nodes ?? []))]
     }
-  }, [build, assign, treeIdx, pick])
+  }, [build, assign, treeIdx, pick, inLab, labZoom])
 
   function toggleOwned(gemId: string) {
     setOwned((o) => ({ ...o, [gemId]: !o[gemId] }))
@@ -717,6 +725,16 @@ export default function App() {
                 />
                 <span>
                   Auto view<span className="sub">FOCUS in the wilderness, your chosen view in town</span>
+                </span>
+              </label>
+              <label className="settings-row">
+                <input
+                  type="checkbox"
+                  checked={labZoom}
+                  onChange={(e) => setLabZoom(save('lab-zoom', e.target.checked))}
+                />
+                <span>
+                  Lab tree zoom<span className="sub">zooms the tree onto your ascendancy while in the Labyrinth</span>
                 </span>
               </label>
               <label className="settings-row">

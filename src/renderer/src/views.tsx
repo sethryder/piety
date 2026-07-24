@@ -61,6 +61,8 @@ export type TreeInfo = {
   count: number
   auto: boolean
   onPick: (i: number | null) => void
+  focusAsc: boolean
+  ascPool: string[]
 }
 
 export type ViewProps = {

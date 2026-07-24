@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 type TreeNode = { x: number; y: number; k: string; n: string; a?: number; s?: string[] }
 type TreeData = {
@@ -52,7 +52,9 @@ export function TreeView({
   pick,
   count,
   auto,
-  onPick
+  onPick,
+  focusAsc,
+  ascPool
 }: {
   allocated: Set<string>
   added: string[]
@@ -63,6 +65,8 @@ export function TreeView({
   count: number
   auto: boolean
   onPick: (i: number | null) => void
+  focusAsc: boolean
+  ascPool: string[]
 }) {
   const addedSet = useMemo(() => new Set(added), [added])
   const removedSet = useMemo(() => new Set(removed), [removed])
@@ -75,6 +79,20 @@ export function TreeView({
   const [box, setBox] = useState<Box>(() =>
     fitBox(added.length ? added : allocated, full)
   )
+  // in lab: zoom onto the build's ascendancy cluster; restore the old viewport on exit
+  const preLabBox = useRef<Box | null>(null)
+  useEffect(() => {
+    if (focusAsc) {
+      const asc = ascPool.filter((id) => tree.nodes[id]?.a)
+      if (!asc.length) return
+      preLabBox.current = box
+      setBox(fitBox(asc, full, true))
+    } else if (preLabBox.current) {
+      setBox(preLabBox.current)
+      preLabBox.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusAsc])
   const [hover, setHover] = useState<{
     x: number
     y: number

@@ -90,8 +90,11 @@ export function tailLog(
       return // file briefly missing (rotation); retry next tick
     }
     if (size < pos) {
-      pos = 0 // truncated/rotated: re-read from start
+      // truncated/rotated (league-start log trims are routine): skip to the new
+      // end — replaying retained content would re-fire hours of old events
+      pos = size
       carry = ''
+      return
     }
     if (size === pos) return
 

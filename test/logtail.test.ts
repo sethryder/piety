@@ -67,27 +67,38 @@ test('tailLog emits only new lines, holds partial writes', async () => {
 
 test('tailLog recovers from rotation and transient file loss', async () => {
   const p = join(tmpdir(), `tail-rot-${process.pid}.log`)
-  writeFileSync(p, 'old line one\nold line two\n')
+  // big enough that the trimmed replacement below is a genuine shrink
+  writeFileSync(p, 'old line\n'.repeat(50))
   const events: Array<{ type: string; [k: string]: unknown }> = []
   const stop = tailLog(p, (e) => events.push(e), 20)
   await sleep(50)
 
-  // rotation: a truncated file must be re-read from the start
+  // truncation (league-start log trim): retained content must NOT be replayed
+  // as live events; only lines appended after the trim come through
   writeFileSync(p, `${STAMP} : You have entered The Coast.\n`)
   await sleep(80)
   assert.ok(
-    events.some((e) => e.type === 'enter' && e.zone === 'The Coast'),
-    'rotated file content missed'
+    !events.some((e) => e.type === 'enter' && e.zone === 'The Coast'),
+    'trimmed file content replayed'
+  )
+  appendFileSync(p, `${STAMP} : You have entered The Mud Flats.\n`)
+  await sleep(80)
+  assert.ok(
+    events.some((e) => e.type === 'enter' && e.zone === 'The Mud Flats'),
+    'post-trim append missed'
   )
 
   // transient loss: file briefly gone, then recreated — tailer keeps polling
+  // and picks up appends to the new file (its initial content is skipped)
   rmSync(p)
   await sleep(60)
-  writeFileSync(p, 'fresh\n')
+  writeFileSync(p, 'recreated\n')
+  await sleep(80)
+  appendFileSync(p, 'fresh\n')
   await sleep(80)
   assert.ok(
     events.some((e) => e.line === 'fresh'),
-    'recreated file content missed'
+    'append after recreation missed'
   )
 
   stop()

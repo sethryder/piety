@@ -293,6 +293,8 @@ export default function App() {
         if (!ours) return
         if (e.name !== charRef.current) {
           const prof = claimProfile(e.name, idxRef.current, e.level <= 2)
+          // '' -> name is the pending char being named: its run stays current
+          if (charRef.current !== '') swapRun(charRef.current, e.name)
           charRef.current = e.name
           setOwned(prof.owned)
           setTrials(prof.trials ?? 0)
@@ -328,7 +330,17 @@ export default function App() {
         // display name, and a name-based check would reset the run there
         const atStart = e.type === 'gen' && e.areaId === visits[0].areaId
         if (atStart) {
-          stashPartial(r)
+          if (charRef.current !== '') {
+            // a named character's run parks; the next level-up line switching
+            // back restores it. ponytail: zone entries between logging back in
+            // and that level-up still stamp the wrong run — a login-line parser
+            // is the upgrade if that bites
+            const parked = load<Record<string, Run>>('pace-parked', {})
+            if (r) parked[charRef.current] = r
+            save('pace-parked', parked)
+          } else {
+            stashPartial(r) // an unnamed char was abandoned mid-strand
+          }
           r = startRun(nowMs)
           // a fresh Twilight Strand = new character: park progress under the
           // pending '' profile until the first level-up line names them
@@ -452,6 +464,18 @@ export default function App() {
 
   function toggleOwned(gemId: string) {
     setOwned((o) => ({ ...o, [gemId]: !o[gemId] }))
+  }
+
+  // pace runs parked per character: a mule or alt must not destroy the main's
+  // live run. Park on switch-away, restore on switch-back.
+  function swapRun(fromName: string, toName: string) {
+    const parked = load<Record<string, Run>>('pace-parked', {})
+    if (runRef.current) parked[fromName] = runRef.current
+    const next = parked[toName] ?? null
+    delete parked[toName]
+    save('pace-parked', parked)
+    runRef.current = next
+    setRun(save('pace-run', next))
   }
 
   // keep partial runs (act 2+ reached): their segments feed best-act comparisons

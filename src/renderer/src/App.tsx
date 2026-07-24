@@ -203,6 +203,7 @@ export default function App() {
   const idxRef = useRef(idx)
   const runRef = useRef(run)
   const charRef = useRef(lastChar())
+  const inLabRef = useRef(false)
 
   // persist the active profile on every change; char switches redirect charRef first
   useEffect(() => {
@@ -303,7 +304,12 @@ export default function App() {
         }
         setChar({ name: e.name, level: e.level, cls: e.cls })
       } else if (e.type === 'trial') {
-        setTrials((t) => t + 1)
+        // Izaro chatters all through the Labyrinth; only plaque comments in
+        // campaign zones mark a trial done.
+        // ponytail: gate follows 'gen' only, so a trial done in a re-entered
+        // old instance right after a lab run is missed; track 'enter' too if
+        // that ever bites
+        if (!inLabRef.current) setTrials((t) => t + 1)
       } else if (e.type === 'slain') {
         // only our character's deaths count; the line also fires for party members
         const r = runRef.current
@@ -319,7 +325,10 @@ export default function App() {
           e.type === 'gen'
             ? advanceById(visits, idxRef.current, e.areaId)
             : advance(visits, idxRef.current, e.zone)
-        if (e.type === 'gen') setAreaLevel(save('area-level', e.areaLevel))
+        if (e.type === 'gen') {
+          inLabRef.current = /Labyrinth/i.test(e.areaId)
+          setAreaLevel(save('area-level', e.areaLevel))
+        }
         // moved by re-entering an existing instance: its level is unknown
         // (only 'gen' carries one) — hide the ZL chip rather than lie.
         // persisted so the mini overlay's chip stays honest too

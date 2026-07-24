@@ -12,7 +12,9 @@ const GEN_RE = /\] Generating level (\d+) area "([^"]+)" with seed (\d+)/
 const ENTER_RE = /\] : You have entered (.+)\.$/
 const LEVEL_RE = /\] : (\S+) \((\w+)\) is now level (\d+)$/
 const SLAIN_RE = /\] : (\S+) has been slain\.$/
-const TRIAL_RE = /\] : Trial Completed\.?$/
+// the on-screen "Trial Completed" toast is never written to Client.txt; the
+// only trace of a plaque completion is Izaro's one-liner comment
+const TRIAL_RE = /\] Izaro: /
 
 export function parseLine(line: string): LogEvent | null {
   const gen = GEN_RE.exec(line)

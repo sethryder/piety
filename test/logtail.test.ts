@@ -24,7 +24,12 @@ test('parseLine', () => {
     type: 'slain',
     name: 'Snorri'
   })
-  assert.deepEqual(parseLine(`${STAMP} : Trial Completed`), { type: 'trial' })
+  // real line from Client.txt — trial completion is only ever logged as an
+  // Izaro comment, never as the on-screen "Trial Completed" toast
+  assert.deepEqual(parseLine(`${STAMP} Izaro: Belief is the strongest metal of them all.`), {
+    type: 'trial'
+  })
+  assert.equal(parseLine(`${STAMP} : Trial Completed`), null)
   assert.equal(parseLine(`${STAMP} : Some chat message.`), null)
   assert.deepEqual(
     parseLine('2026/07/19 12:00:01 123 abc [DEBUG Client 1] Generating level 12 area "1_1_11_1" with seed 469718509'),

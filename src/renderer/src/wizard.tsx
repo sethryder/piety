@@ -52,7 +52,9 @@ export function Wizard(props: {
       .catch(() => setBuildFiles([]))
   }, [])
 
-  const gates = [props.logPath !== null, parsed !== null, true, true, true]
+  // step 0 never blocks: with no Client.txt yet (fresh PC, game not installed)
+  // the app must still be reachable; tracking starts once the log is picked
+  const gates = [true, parsed !== null, true, true, true]
 
   async function parse() {
     setError('')
@@ -137,7 +139,8 @@ export function Wizard(props: {
             {!props.logPath && (
               <div className="whint">
                 Point me at Path of Exile&apos;s logs\Client.txt — reading it is how zone tracking
-                works. Read-only, no game files touched.
+                works. Read-only, no game files touched. Not installed yet? Launch the game once to
+                create it — you can continue setup now and pick it later in Settings.
               </div>
             )}
           </div>

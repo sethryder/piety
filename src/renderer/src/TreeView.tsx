@@ -53,6 +53,7 @@ export function TreeView({
   count,
   auto,
   onPick,
+  order,
   focusAsc,
   ascPool
 }: {
@@ -65,6 +66,7 @@ export function TreeView({
   count: number
   auto: boolean
   onPick: (i: number | null) => void
+  order: number[]
   focusAsc: boolean
   ascPool: string[]
 }) {
@@ -226,10 +228,16 @@ export function TreeView({
         <span className="spacer" />
         {count > 1 && (
           <>
-            <button className="wpicker-btn" onClick={() => onPick((pick - 1 + count) % count)}>
+            <button
+              className="wpicker-btn"
+              onClick={() => onPick(order[(order.indexOf(pick) - 1 + count) % count])}
+            >
               ◀
             </button>
-            <button className="wpicker-btn" onClick={() => onPick((pick + 1) % count)}>
+            <button
+              className="wpicker-btn"
+              onClick={() => onPick(order[(order.indexOf(pick) + 1) % count])}
+            >
               ▶
             </button>
           </>

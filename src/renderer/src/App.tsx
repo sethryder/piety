@@ -480,6 +480,10 @@ export default function App() {
       onPick: setTreePick,
       // in lab: zoom the tree onto the ascendancy. Pool nodes from every spec so
       // the first lab focuses correctly even if the active spec has no asc points yet
+      // arrows browse specs in campaign order, not PoB file order (some PoBs list endgame first)
+      order: build.specs
+        .map((_, i) => i)
+        .sort((a, b) => (assign[a] ?? 99) - (assign[b] ?? 99) || a - b),
       focusAsc: inLab && labZoom,
       ascPool: [...new Set(build.specs.flatMap((s) => s.nodes ?? []))]
     }

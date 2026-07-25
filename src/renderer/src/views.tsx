@@ -61,6 +61,7 @@ export type TreeInfo = {
   count: number
   auto: boolean
   onPick: (i: number | null) => void
+  order: number[]
   focusAsc: boolean
   ascPool: string[]
 }

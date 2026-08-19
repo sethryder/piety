@@ -10,6 +10,9 @@ jobs:
   release:
     # windows builds on windows: cross-building the NSIS installer on linux needs wine
     strategy:
+      # serialize: concurrent jobs race to create the GitHub release and orphan
+      # each other's uploads
+      max-parallel: 1
       matrix:
         include:
           - os: ubuntu-latest

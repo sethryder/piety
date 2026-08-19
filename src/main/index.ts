@@ -201,9 +201,11 @@ function toggleMini(): void {
     alwaysOnTop: true,
     skipTaskbar: true,
     show: false,
+    title: 'Piety Overlay', // stable title so KWin window rules can target the overlay (#14)
     backgroundColor: '#0b0d10',
     webPreferences: { preload: join(__dirname, '../preload/index.js'), spellcheck: false }
   })
+  mini.on('page-title-updated', (e) => e.preventDefault()) // keep the title the page loads with
   mini.setAlwaysOnTop(true, 'screen-saver') // above borderless-fullscreen games
   mini.once('ready-to-show', () => mini?.show())
   const saveBounds = () => mini && patchConfig({ miniBounds: mini.getBounds() })

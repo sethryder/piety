@@ -1,6 +1,6 @@
 {
   "name": "piety",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "author": "Seth Ryder <seth@sethryder.com>",
   "description": "Piety — Path of Exile campaign leveling companion",
   "main": "out/main/index.js",

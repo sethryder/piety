@@ -36,6 +36,25 @@ If you use the overlay on top of the game, run PoE in Windowed Fullscreen. Exclu
 
 Download `Piety-*.AppImage` from Releases, make it executable (`chmod +x`), and run it. PoE installed through Steam/Proton is detected automatically, including libraries on other drives. If Path of Building runs under Wine or Lutris, builds in the default prefix are found too; set `POB_BUILDS_DIR` for custom prefixes. Known limitation: the overlay's always-on-top depends on your compositor, and some Wayland desktops ignore it (X11 is fine).
 
+#### KDE Plasma: overlay hidden behind fullscreen games
+
+On Plasma, KWin puts a focused fullscreen game above keep-above windows, so the overlay can disappear during play. Two steps fix it (thanks to [@jamesmeneghello](https://github.com/jamesmeneghello) in [#14](https://github.com/sethryder/piety/issues/14)):
+
+1. On Wayland, launch Piety with `--ozone-platform=x11`. Native Wayland has no always-on-top protocol.
+2. Add a KWin rule pinning the overlay window (titled `Piety Overlay`) to the overlay layer. Append this to `~/.config/kwinrulesrc` and run `qdbus org.kde.KWin /KWin reconfigure` (or log out and back in):
+
+```ini
+[piety-overlay]
+Description=Piety overlay above fullscreen games
+wmclass=piety
+wmclassmatch=1
+title=Piety Overlay
+titlematch=1
+layer=overlay
+layerrule=2
+types=1
+```
+
 ## Development
 
 ```bash

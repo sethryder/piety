@@ -153,17 +153,36 @@ ipcMain.handle('init-state', () => ({
   poeRunning
 }))
 
+// A draft release (or any tag without assets) shows up in the prerelease atom
+// feed that allowPrerelease makes electron-updater read, and its latest.yml
+// 404s, failing the whole check. Retry on the stable /releases/latest path,
+// which ignores drafts, so one unpublished tag can't hide a real update.
+async function checkForUpdates() {
+  try {
+    return await autoUpdater.checkForUpdates()
+  } catch (e) {
+    if (!autoUpdater.allowPrerelease) throw e
+    autoUpdater.allowPrerelease = false
+    try {
+      return await autoUpdater.checkForUpdates()
+    } finally {
+      // read back from config: the user may have toggled beta mid-check
+      autoUpdater.allowPrerelease = !!loadConfig().allowPrerelease
+    }
+  }
+}
+
 ipcMain.on('set-prerelease', (_e, v: boolean) => {
   patchConfig({ allowPrerelease: v })
   autoUpdater.allowPrerelease = v
   // opting into beta should surface a waiting pre-release right away
-  if (v && app.isPackaged) autoUpdater.checkForUpdates().catch(() => {})
+  if (v && app.isPackaged) checkForUpdates().catch(() => {})
 })
 
 ipcMain.handle('check-updates', async () => {
   if (!app.isPackaged) return null
   try {
-    const r = await autoUpdater.checkForUpdates()
+    const r = await checkForUpdates()
     return { current: app.getVersion(), latest: r?.updateInfo.version ?? null }
   } catch {
     return { current: app.getVersion(), latest: null }
@@ -299,9 +318,9 @@ function createWindow(): void {
       win.webContents.send('update-ready', info.version)
     })
     ipcMain.on('install-update', () => autoUpdater.quitAndInstall())
-    autoUpdater.checkForUpdates().catch(() => {}) // offline/no releases yet: silently skip
+    checkForUpdates().catch(() => {}) // offline/no releases yet: silently skip
     // re-check every 4h; the app stays open for whole play sessions
-    setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 4 * 3600 * 1000)
+    setInterval(() => checkForUpdates().catch(() => {}), 4 * 3600 * 1000)
   }
 }
 

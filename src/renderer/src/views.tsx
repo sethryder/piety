@@ -37,7 +37,8 @@ export function LevelChip({
 }) {
   if (charLv === null || areaLv === null || town) return null
   const status = levelStatus(charLv, areaLv)
-  const delta = areaLv - charLv
+  // char minus zone: +3 reads "you are 3 above the zone"
+  const delta = charLv - areaLv
   const title =
     status === 'over'
       ? 'Overleveled for this zone — XP penalty'

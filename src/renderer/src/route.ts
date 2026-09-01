@@ -10,13 +10,16 @@ export type LabDue = { lab: number; name: string; need: number }
 // cumulative trials gating each lab: 6 normal, 9 cruel, 12 merciless
 export const labNeed = (ord: number): number => (ord <= 6 ? 6 : ord <= 9 ? 9 : 12)
 
-// tick a visit's completed trial steps and append (n/need) lab progress
+// tick a visit's completed trial steps and append (n/need) progress toward the
+// step's own lab tier (normal 6, cruel +3, merciless +3), not the cumulative count
 export const tickTrials = (v: ZoneVisit, done: number): ZoneVisit => ({
   ...v,
   steps: v.steps.map((s) => {
     if (!s.trial) return s
     const need = labNeed(s.trial)
-    return { ...s, done: s.trial <= done, text: `${s.text} (${Math.min(done, need)}/${need})` }
+    const base = need === 6 ? 0 : need - 3
+    const got = Math.min(Math.max(done - base, 0), need - base)
+    return { ...s, done: s.trial <= done, text: `${s.text} (${got}/${need - base})` }
   })
 })
 

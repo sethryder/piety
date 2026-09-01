@@ -39,9 +39,11 @@ Get {crafting}
     #sub Go {dir|180}
 Find 3x{quest_text|Kitava's Torment}, search in the corners of the map
 Get {crafting}
+Place {portal|set}
 {logout}
 Hand in {quest|a5q7} #Kitava's Torments
-{waypoint|1_5_3b} #The Ruined Square
+Take {portal|use} #The Reliquary
+➞ {enter|1_5_3b} #The Ruined Square
 ➞ {enter|1_5_8} #The Cathedral Rooftop
     #sub Go {dir|225}
 ➞ {arena|Cathedral Apex}, kill {kill|Kitava, the Insatiable}

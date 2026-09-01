@@ -29,11 +29,39 @@ const stripLabDetours = (text) => {
     .filter((l, i) => !LAB_RE.test(l) && !(/\{waypoint\|\d+_\d+_town\}/.test(l) && LAB_RE.test(lines[i + 1] ?? '')))
     .join('\n')
 }
+// manual step overrides where we route better than upstream, applied after
+// lab stripping. Exact multi-line match: if upstream rewrites the section the
+// sync fails loudly instead of silently dropping our override.
+const OVERRIDES = {
+  5: [
+    {
+      // Kitava's Torments: portal back into the Reliquary and walk out — its
+      // Square exit is right by the Cathedral Rooftop, beats the waypoint run
+      find: `{logout}
+Hand in {quest|a5q7} #Kitava's Torments
+{waypoint|1_5_3b} #The Ruined Square
+➞ {enter|1_5_8} #The Cathedral Rooftop`,
+      replace: `Place {portal|set}
+{logout}
+Hand in {quest|a5q7} #Kitava's Torments
+Take {portal|use} #The Reliquary
+➞ {enter|1_5_3b} #The Ruined Square
+➞ {enter|1_5_8} #The Cathedral Rooftop`
+    }
+  ]
+}
+const applyOverrides = (act, text) => {
+  for (const { find, replace } of OVERRIDES[act] ?? []) {
+    if (!text.includes(find)) throw new Error(`act-${act}: override no longer matches upstream:\n${find}`)
+    text = text.replace(find, replace)
+  }
+  return text
+}
 for (let i = 1; i <= 10; i++) {
   const text = await (await get(`${EL}/common/data/routes/act-${i}.txt`)).text()
-  writeFileSync(`${routesDir}act-${i}.txt`, stripLabDetours(text))
+  writeFileSync(`${routesDir}act-${i}.txt`, applyOverrides(i, stripLabDetours(text)))
 }
-console.log('routes: act-1..10 updated (lab detours stripped)')
+console.log('routes: act-1..10 updated (lab detours stripped, overrides applied)')
 
 // --- data jsons ---
 for (const f of ['gems.json', 'gem-colours.json', 'quests.json', 'characters.json']) {

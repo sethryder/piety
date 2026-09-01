@@ -1,0 +1,35 @@
+name: sync-upstream
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # tag pushes made with github.token don't trigger other workflows;
+          # a PAT in RELEASE_TOKEN lets the version tag kick off release.yml
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run update-data
+      - name: Commit, tag, and push if upstream data changed
+        run: |
+          git add -A
+          git diff --cached --quiet && { echo "no upstream data changes"; exit 0; }
+          npm run typecheck
+          npm test
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Sync upstream exile-leveling data"
+          npm version patch -m "v%s"
+          git push --follow-tags

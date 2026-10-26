@@ -17,7 +17,7 @@
     "release": "electron-vite build && electron-builder --win --linux --x64 --publish always"
   },
   "dependencies": {
-    "electron-updater": "^6.8.9",
+    "electron-updater": "^6.8.11",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

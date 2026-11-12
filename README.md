@@ -63,7 +63,11 @@ npm run dev          # run locally (Electron + Vite + React)
 npm test             # parser and logic tests
 npm run package:win  # build the Windows installer into dist/ (package:linux for the AppImage)
 npm run update-data  # refresh vendored routes, gem/quest data, and the passive tree
+node scripts/update-layouts.mjs  # refresh zone layout images from Exile-UI
+node scripts/layout-kinds.mjs    # reclassify layouts as exact/sample (needs ImageMagick)
 ```
+
+The daily `sync-upstream` workflow runs all three and cuts a patch release when anything changed.
 
 Game data is vendored, so the app works fully offline. `npm run update-data` refetches everything from upstream at league start, including the latest passive tree from GGG's official export. Run the tests afterwards; they parse the real data files and catch upstream format changes.
 

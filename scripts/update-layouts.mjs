@@ -17,8 +17,12 @@ const blobSha = (buf) =>
   createHash('sha1').update(`blob ${buf.length}\0`).update(buf).digest('hex')
 
 // contents API lists up to 1000 entries per directory; we have ~470
+const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
 const res = await fetch(`https://api.github.com/repos/${REPO}/contents/${DIR}?ref=main`, {
-  headers: { Accept: 'application/vnd.github+json' }
+  headers: {
+    Accept: 'application/vnd.github+json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  }
 })
 if (!res.ok) throw new Error(`HTTP ${res.status} listing ${REPO}/${DIR}`)
 const upstream = (await res.json()).filter((e) => e.type === 'file' && e.name.endsWith('.jpg'))

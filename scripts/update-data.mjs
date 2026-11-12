@@ -70,26 +70,46 @@ for (const f of ['gems.json', 'gem-colours.json', 'quests.json', 'characters.jso
   console.log(`data: ${f} (${text.length} bytes)`)
 }
 
-// --- passive tree: newest plain version from exile-leveling's pin table ---
-// GGG releases the tree before exile-leveling pins it; override with e.g.
+// --- passive tree: newest plain version from exile-leveling's pin table, or
+// GGG's newest plain export if it's the same version or newer. GGG ships trees
+// (previews, then patches) before exile-leveling re-pins, and the daily sync
+// must not roll a newer tree back to the older pin. Force one with e.g.
 //   TREE_VERSION=3_29 TREE_SHA=<skilltree-export commit> npm run update-data
+const GGG = 'grindinggear/skilltree-export'
+const treeUrl = (sha) => `https://raw.githubusercontent.com/${GGG}/${sha}/data.json`
+const cmpVersion = (a, b) => {
+  const [am, an] = a.split('_').map(Number)
+  const [bm, bn] = b.split('_').map(Number)
+  return am - bm || an - bn
+}
 let latest
 if (process.env.TREE_VERSION && process.env.TREE_SHA) {
-  latest = {
-    v: process.env.TREE_VERSION,
-    url: `https://raw.githubusercontent.com/grindinggear/skilltree-export/${process.env.TREE_SHA}/data.json`
-  }
+  latest = { v: process.env.TREE_VERSION, url: treeUrl(process.env.TREE_SHA) }
 } else {
   const seeding = await (await get(`${EL}/seeding/src/build-tree/index.ts`)).text()
   const pins = [...seeding.matchAll(/"(\d+_\d+(?:_[a-z]+)*)":\s*\n?\s*"(https:[^"]+)"/g)]
     .filter(([, v]) => /^\d+_\d+$/.test(v))
     .map(([, v, url]) => ({ v, url }))
   if (pins.length === 0) throw new Error('no tree pins found in exile-leveling seeding file')
-  latest = pins.sort((a, b) => {
-    const [am, an] = a.v.split('_').map(Number)
-    const [bm, bn] = b.v.split('_').map(Number)
-    return am - bm || an - bn
-  }).at(-1)
+  latest = pins.sort((a, b) => cmpVersion(a.v, b.v)).at(-1)
+
+  // plain trees only: "3.29.1", "3.28.0j", "3.29.0 preview 2". Event trees
+  // ("3.27.0 phrecia preview", "Curse of the Allflame Passive Tree preview")
+  // don't match, same as the plain-version filter on exile-leveling's pins.
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN
+  const commits = await (
+    await fetch(`https://api.github.com/repos/${GGG}/commits?per_page=30`, {
+      headers: { Accept: 'application/vnd.github+json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }
+    })
+  ).json()
+  if (!Array.isArray(commits)) throw new Error(`GitHub API: ${commits?.message ?? 'bad response'} (${GGG} commits)`)
+  for (const c of commits) {
+    const m = c.commit.message.trim().match(/^(\d+)\.(\d+)\.\d+[a-z]?(?: preview(?: \d+)?)?$/i)
+    if (!m) continue
+    const v = `${m[1]}_${m[2]}`
+    if (cmpVersion(v, latest.v) >= 0) latest = { v, url: treeUrl(c.sha) }
+    break
+  }
 }
 console.log(`tree: version ${latest.v} from ${latest.url}`)
 

@@ -2,12 +2,23 @@
 // (Lailloken/Exile-UI Act-Decoder): white = "decoded" (one of the zone's known
 // exact layouts), orange = "sample" (non-conclusive example), borderless =
 // "divided" continuation section. The app crops the border off, so this map
-// re-surfaces the meaning as a UI label. Requires ImageMagick (`magick`).
+// re-surfaces the meaning as a UI label. Requires ImageMagick: `magick` (v7) or
+// `convert` (v6, what Ubuntu CI runners ship).
 // Rerun after re-vendoring src/renderer/src/layouts.
 import { execFileSync } from 'node:child_process'
 import { readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+const IM = (() => {
+  for (const bin of ['magick', 'convert']) {
+    try {
+      execFileSync(bin, ['-version'], { stdio: 'ignore' })
+      return bin
+    } catch {}
+  }
+  throw new Error('ImageMagick not found (need `magick` or `convert`)')
+})()
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const dir = join(root, 'src/renderer/src/layouts')
@@ -23,7 +34,7 @@ const classify = (hex) => {
 // (avg ≈ frame color), while map art only speckles it (avg ≈ black). Measured
 // separation is wide: white ≈ #FCFCFC, orange ≈ #EA7528, borderless ≈ #0E0D0E.
 const edgeAvg = (path, crop) =>
-  execFileSync('magick', [path, '-crop', crop, '+repage', '-resize', '1x1!', '-format', '%[hex:p{0,0}]', 'info:'])
+  execFileSync(IM, [path, '-crop', crop, '+repage', '-resize', '1x1!', '-format', '%[hex:p{0,0}]', 'info:'])
     .toString()
     .trim()
 
@@ -31,7 +42,7 @@ const out = {}
 const tally = { e: 0, s: 0, d: 0 }
 for (const f of readdirSync(dir).filter((n) => n.endsWith('.jpg'))) {
   const path = join(dir, f)
-  const [w, h] = execFileSync('magick', [path, '-format', '%w %h', 'info:'])
+  const [w, h] = execFileSync(IM, [path, '-format', '%w %h', 'info:'])
     .toString()
     .split(' ')
     .map(Number)

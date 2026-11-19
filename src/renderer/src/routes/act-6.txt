@@ -5,6 +5,7 @@ Kill {kill|Everything}
 {logout}
 Hand in {quest|a6q4} #Fallen from Grace
 ➞ {enter|2_6_2} #The Coast
+Talk to {generic|Ailith}
 ➞ {enter|2_6_4} #The Mud Flats
 Find and kill {kill|The Dishonoured Queen}, take {quest_text|Eye of Conquest}
     #sub {dir|45} corner of area, normally by a house

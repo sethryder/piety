@@ -48,6 +48,17 @@ Take {portal|use} #The Reliquary
 ➞ {enter|1_5_3b} #The Ruined Square
 ➞ {enter|1_5_8} #The Cathedral Rooftop`
     }
+  ],
+  6: [
+    {
+      // 3.30: talk to Ailith on the Coast before the Mud Flats (from
+      // Lailloken/Exile-UI d8e4a21). Drop once exile-leveling adds it.
+      find: `➞ {enter|2_6_2} #The Coast
+➞ {enter|2_6_4} #The Mud Flats`,
+      replace: `➞ {enter|2_6_2} #The Coast
+Talk to {generic|Ailith}
+➞ {enter|2_6_4} #The Mud Flats`
+    }
   ]
 }
 const applyOverrides = (act, text) => {

@@ -1011,15 +1011,19 @@ button.pace-chip:hover {
   -webkit-app-region: drag;
 }
 
-.mini-bar .spacer {
-  flex: 1;
+/* the clock's own 14px lead-in is dead space here; .mini-char is the spacer */
+.mini-bar .footer-chip {
+  margin-left: 0;
 }
 
-/* narrow overlay: shed chips before the buttons get pushed off the edge */
-@media (max-width: 320px) {
-  .mini-bar .lvl-chip {
-    display: none;
-  }
+/* narrow overlay: the level chip gives way (ellipsis, then nothing) before the
+   buttons get pushed off the edge */
+.mini-bar .lvl-chip {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 280px) {
@@ -1029,6 +1033,8 @@ button.pace-chip:hover {
 }
 
 .mini-char {
+  flex: 1;
+  min-width: 0;
   color: var(--text-secondary);
   font-size: 11.5px;
   overflow: hidden;
@@ -1042,7 +1048,8 @@ button.pace-chip:hover {
   border: none;
   color: var(--text-secondary);
   font-size: 12px;
-  padding: 2px 5px;
+  padding: 2px 3px;
+  flex-shrink: 0;
   cursor: pointer;
   border-radius: 4px;
 }

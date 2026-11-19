@@ -199,7 +199,6 @@ export default function MiniApp() {
         <span className="mini-char">
           {char ? `${char.name} · ${char.level}` : locked ? '' : 'drag me'}
         </span>
-        <span className="spacer" />
         <RunClock run={run} pausedSince={pausedSince} />
         <button className="mini-btn" title="Step route back" disabled={idx === 0} onClick={() => step(-1)}>
           ◀
